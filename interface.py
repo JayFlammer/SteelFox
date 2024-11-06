@@ -130,4 +130,3 @@ class SteelFoxApp:
             messagebox.showinfo("Datei hochgeladen", "Armierung neu wurde erfolgreich hochgeladen.")
         else:
             messagebox.showerror("Fehler", "Keine Datei ausgewählt")
-
