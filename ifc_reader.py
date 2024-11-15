@@ -15,7 +15,7 @@ def concrete_extract_wall_slab_properties(model):
                 # Elemente durchsuchen (IfcWall und IfcSlab)
         elements = model.by_type("IfcWall") + model.by_type("IfcSlab")
 
-        # Ergebnisliste initialisieren
+        # Ergebnipysliste initialisieren
         result = []
 
         # Über alle Elemente iterieren
