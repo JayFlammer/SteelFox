@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import ttk
 from tkinter import filedialog, messagebox
 from ifc_reader import load_ifc_data, concrete_extract_wall_slab_properties, reinforcement_extract_properties
 from concrete_calculatons import calculate_concrete_volume
@@ -70,58 +71,70 @@ class SteelFoxApp:
             messagebox.showerror("Fehler", "Keine Datei ausgewählt")
 
     def upload_old_reinforcement_ifc(self):
-        file_path = filedialog.askopenfilename(filetypes=[("IFC files", "*.ifc")])
-        if file_path:
+        # Dateidialog, um mehrere IFC-Dateien auszuwählen
+        file_paths = filedialog.askopenfilenames(filetypes=[("IFC files", "*.ifc")])
+        if file_paths:
+            # Speichere die Dateipfade in einer Instanzvariablen
+            self.ifc_file_paths = list(file_paths)
+            messagebox.showinfo("Information", f"{len(file_paths)} IFC-Datei(en) erfolgreich ausgewählt.")
+
+            # Starte die Analyse direkt nach dem Upload
+            self.analyze_reinforcement_data()
+    
+    def analyze_reinforcement_data(self):
+        if not self.ifc_file_paths:
+            messagebox.showwarning("Warnung", "Keine IFC-Dateien zum Analysieren ausgewählt.")
+            return
+
+        reinforcement_data = []
+
+        # Iteriere über alle ausgewählten IFC-Dateien
+        for file_path in self.ifc_file_paths:
             try:
-                # IFC-Datei laden und Armierungseigenschaften extrahieren
+                # IFC-Datei laden und Eigenschaften extrahieren
                 model = load_ifc_data(file_path)
-                reinforcement_data = reinforcement_extract_properties(model)
+                data = reinforcement_extract_properties(model)
 
-                # Prüfen, ob überhaupt Daten extrahiert wurden
-                if not reinforcement_data:
-                    messagebox.showinfo("Information", "Keine Armierungseigenschaften im PropertySet 'HGL_B2F' gefunden.")
-                    return
-
-                # Etappenbeziehungen berechnen und Materialien unterscheiden
-                etappen_data = {}
-                for data in reinforcement_data:
-                    # Sicherstellen, dass `data` ein Dictionary ist
-                    if isinstance(data, dict):
-                        etappenbezeichnung = data.get("Etappenbezeichnung", "Unbekannte Etappe")
-                        stahlgruppen_gewicht = data.get("Stabgruppe Gewicht", 0.0)
-                        bauteilname = data.get("Bauteilname", "Unbekannt")
-
-                        if etappenbezeichnung not in etappen_data:
-                            etappen_data[etappenbezeichnung] = {
-                                "Gesamtgewicht": 0.0,
-                                "Materialien": {}
-                            }
-
-                        etappen_data[etappenbezeichnung]["Gesamtgewicht"] += stahlgruppen_gewicht
-
-                        if bauteilname not in etappen_data[etappenbezeichnung]["Materialien"]:
-                            etappen_data[etappenbezeichnung]["Materialien"][bauteilname] = 0.0
-                        
-                        etappen_data[etappenbezeichnung]["Materialien"][bauteilname] += stahlgruppen_gewicht
-
-                # Ergebnisse anzeigen
-                if etappen_data:
-                    result_message = ""
-                    for etappe, data in etappen_data.items():
-                        result_message += f"Etappe: {etappe}\n"
-                        result_message += f"  Gesamtgewicht: {data['Gesamtgewicht']} kg\n"
-                        for material, gewicht in data["Materialien"].items():
-                            result_message += f"  Material: {material}, Gewicht: {gewicht} kg\n"
-                        result_message += "\n"
-
-                    messagebox.showinfo("Armierungseigenschaften", result_message)
+                if data:
+                    reinforcement_data.extend(data)
                 else:
-                    messagebox.showinfo("Information", "Keine passenden Etappenbeziehungen oder Materialdaten gefunden.")
+                    messagebox.showinfo("Information", f"Keine Armierungseigenschaften im PropertySet 'HGL_B2F' in Datei '{file_path}' gefunden.")
 
             except Exception as e:
-                messagebox.showerror("Fehler", f"Fehler beim Verarbeiten der IFC-Datei: {str(e)}")
-        else:
-            messagebox.showerror("Fehler", "Keine Datei ausgewählt")
+                messagebox.showerror("Fehler", f"Fehler beim Laden der IFC-Datei '{file_path}': {str(e)}")
+
+        if not reinforcement_data:
+            messagebox.showinfo("Information", "Keine Armierungseigenschaften in den ausgewählten Dateien gefunden.")
+            return
+
+        # Neues Fenster für die Ausgabe erstellen, master verwenden
+        output_window = tk.Toplevel(self.root)  # Statt tk.Toplevel(self)
+        output_window.title("Armierungseigenschaften")
+
+        # Rahmen für den Text und die Scrollbar erstellen
+        frame = ttk.Frame(output_window)
+        frame.pack(fill='both', expand=True)
+
+        # Text-Widget erstellen, um die Ergebnisse zu zeigen
+        text_widget = tk.Text(frame, wrap='word')
+        text_widget.pack(side='left', fill='both', expand=True)
+
+        # Scrollbar hinzufügen
+        scrollbar = ttk.Scrollbar(frame, command=text_widget.yview)
+        scrollbar.pack(side='right', fill='y')
+        text_widget['yscrollcommand'] = scrollbar.set
+
+        # Ergebnisse in das Text-Widget schreiben
+        for data in reinforcement_data:
+            text_widget.insert('end', f"Etappe: {data['Etappenbezeichnung']}\n")
+            text_widget.insert('end', f"Material: {data['Material']}\n")
+            text_widget.insert('end', f"Durchmesser: {data['Durchmesser']}\n")
+            text_widget.insert('end', f"Gesamtgewicht: {data['Gesamtgewicht']} kg\n")
+            text_widget.insert('end', f"Anzahl Eisen: {data['AnzahlEisen']}\n\n")
+
+        # Text-Widget nur lesbar machen
+        text_widget.config(state='disabled')
+
 
 
     def upload_new_reinforcement_ifc(self):
