@@ -6,14 +6,14 @@ def reinforcement_extract_properties(model):
     Extrahiert und aggregiert die Eigenschaften der Armierung aus einem IFC-Modell.
     Die Daten werden aufgeteilt in Etappen > Material > Durchmesser und dann aggregiert.
     :param model: IFC Modell
-    :return: Aggregierte Armierungseigenschaften als Liste von Dictionaries
+    :return: Aggregierte Armierungseigenschaften
     """
     try:
         # Extrahiert alle IfcReinforcingBar-Elemente
         reinforcement_elements = model.by_type("IfcReinforcingBar")
 
         # Struktur für aggregierte Daten initialisieren: Etappe > Material > Durchmesser
-        reinforcement_data = []
+        reinforcement_data = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: {"Gesamtgewicht": 0.0, "AnzahlEisen": 0})))
 
         # Über alle Armierungselemente iterieren
         for element in reinforcement_elements:
@@ -50,21 +50,25 @@ def reinforcement_extract_properties(model):
 
             # Nur weiter machen, wenn wir alle nötigen Informationen haben
             if etappenbezeichnung and material and durchmesser:
-                # Extrahierte Daten in eine flache Struktur umwandeln und zur Liste hinzufügen
-                reinforcement_data.append({
-                    "Etappenbezeichnung": etappenbezeichnung,
-                    "Material": material,
-                    "Durchmesser": durchmesser,
-                    "Gesamtgewicht": stabgruppe_gewicht,
-                    "AnzahlEisen": anzahl_eisen
-                })
+                # Daten zur aggregierten Struktur hinzufügen
+                reinforcement_data[etappenbezeichnung][material][durchmesser]["Gesamtgewicht"] += stabgruppe_gewicht
+                reinforcement_data[etappenbezeichnung][material][durchmesser]["AnzahlEisen"] += anzahl_eisen
+
+        # Ausgabe der aggregierten Daten
+        for etappe, materials in reinforcement_data.items():
+            print(f"\nEtappe: {etappe}")
+            for mat, diameters in materials.items():
+                print(f"  Material: {mat}")
+                for dia, data in diameters.items():
+                    print(f"    Durchmesser: {dia}")
+                    print(f"      Gesamtgewicht: {data['Gesamtgewicht']} kg")
+                    print(f"      Anzahl Eisen: {data['AnzahlEisen']}")
 
         return reinforcement_data
 
     except Exception as e:
         print(f"Fehler beim Extrahieren der Armierungseigenschaften: {str(e)}")
-        return []
-
+        return {}
 
 # Beispielaufruf (Pfad zur IFC-Datei anpassen)
 ifc_file_path = r"C:\Users\FLJ\OneDrive - Halter AG\Dokumente\2.01_HSLU DC\3. Semester\DT_Progr\Modelle\Bewehrung\Decke\MET_TRW_GRO_098-BEW-BP-ET01_B_Bewehrung Vertiefungen ET1.ifc"
