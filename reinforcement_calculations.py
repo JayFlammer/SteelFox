@@ -3,14 +3,11 @@ import tkinter as tk
 from tkinter import messagebox
 
 
-from steelfox_code.datas.ifc_reader import load_ifc_data
-from steelfox_code.datas.reinforcement_extractor import reinforcement_extract_properties
+from datas.ifc_reader import load_ifc_data
+from datas.reinforcement_extractor import reinforcement_extract_properties
 
 def analyze_reinforcement_data(ifc_file_paths, root):
-    if not ifc_file_paths:
-        messagebox.showwarning("Warnung", "Keine IFC-Dateien zum Analysieren ausgewählt.")
-        return
-
+    
     reinforcement_data = []
 
     # Iteriere über alle ausgewählten IFC-Dateien
