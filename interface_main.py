@@ -40,25 +40,29 @@ class SteelFoxApp:
 
         # Dateien Auswahl
         # Excel Armierung Alt
-        self.xlsx_ausschreibung_label = ctk.CTkLabel(self.input_frame, text="Armierung Ausschreibung", font=("Helvetica", 10, "bold"), fg_color="#787575", text_color="#ffffff")
-        self.xlsx_ausschreibung_label.pack(pady=5, anchor='w', padx=10)
-        self.xlsx_ausschreibung_button = ctk.CTkButton(self.input_frame, text="Excel Upload", command=self.upload_reinforcement_auschreibung, fg_color="#ffa8a8", text_color="white")
-        self.xlsx_ausschreibung_button.pack(anchor='w', padx=10)
-        self.xlsx_ausschreibung_count_label = ctk.CTkLabel(self.input_frame, text="Noch keine Datei hochgeladen", font=("Helvetica", 10), text_color="#ffffff")
-        self.xlsx_ausschreibung_count_label.pack(anchor='w', padx=10)
+        self.xlsx_ausschreibung_label = ctk.CTkLabel(self.input_frame, text="Armierung Ausschreibung", font=("Helvetica", 14, "bold"), fg_color="#787575", text_color="#ffffff")
+        self.xlsx_ausschreibung_label.pack(pady=5, padx=10, fill="x")
+
+        self.xlsx_ausschreibung_button = ctk.CTkButton(self.input_frame, text="Excel Upload", command=self.upload_reinforcement_auschreibung, fg_color="#ffa8a8", text_color="white", width=200)
+        self.xlsx_ausschreibung_button.pack(padx=10)
+
+        self.xlsx_ausschreibung_count_label = ctk.CTkLabel(self.input_frame, text="Noch keine Datei hochgeladen", font=("Helvetica", 12), text_color="#ffffff")
+        self.xlsx_ausschreibung_count_label.pack(padx=10, fill="x")
 
         # IFC Armierung Ausführung
-        self.ifc_ausfuehrung_label = ctk.CTkLabel(self.input_frame, text="Armierung Ausführung", font=("Helvetica", 10 , "bold"), fg_color="#787575", text_color="#ffffff")
-        self.ifc_ausfuehrung_label.pack(pady=5, anchor='w', padx=10)
-        self.ifc_ausfuehrung_button = ctk.CTkButton(self.input_frame, text="IFC Upload", command=self.upload_reinforcement_ausfuehrung, fg_color="#ffa8a8", text_color="white")
-        self.ifc_ausfuehrung_button.pack(anchor='w', padx=10)
-        self.ifc_ausfuehrung_count_label = ctk.CTkLabel(self.input_frame, text="Noch keine Datei hochgeladen", font=("Helvetica", 10), text_color="#ffffff")
-        self.ifc_ausfuehrung_count_label.pack(anchor='w', padx=10)
-    
+        self.ifc_ausfuehrung_label = ctk.CTkLabel(self.input_frame, text="Armierung Ausführung", font=("Helvetica", 14, "bold"), fg_color="#787575", text_color="#ffffff")
+        self.ifc_ausfuehrung_label.pack(pady=10, padx=10, fill="x")
+
+        self.ifc_ausfuehrung_button = ctk.CTkButton(self.input_frame, text="IFC Upload", command=self.upload_reinforcement_ausfuehrung, fg_color="#ffa8a8", text_color="white", width=200)
+        self.ifc_ausfuehrung_button.pack(padx=10)
+
+        self.ifc_ausfuehrung_count_label = ctk.CTkLabel(self.input_frame, text="Noch keine Datei hochgeladen", font=("Helvetica", 12), text_color="#ffffff")
+        self.ifc_ausfuehrung_count_label.pack(padx=10, fill="x")
 
         # Button zur Analyse hinzufügen
-        self.analyze_button = ctk.CTkButton(self.input_frame, text="Analyse starten", command=self.start_analysis, state='disabled', fg_color="#000000", text_color="white")
-        self.analyze_button.pack(pady=20, anchor='w', padx=10)
+        self.analyze_button = ctk.CTkButton(self.input_frame, text="Analyse starten", font=("Helvetica", 14), command=self.start_analysis, state='disabled', fg_color="#000000", text_color="white", width=200)
+        self.analyze_button.pack(pady=20, padx=10)
+
 
 
         # Variablen zur Speicherung der Dateipfade
