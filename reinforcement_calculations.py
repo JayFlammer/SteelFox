@@ -1,13 +1,12 @@
+import customtkinter as ctk
 from tkinter import ttk
-import tkinter as tk
-from tkinter import messagebox
-
+from tkinter import filedialog, messagebox
+from PIL import Image, ImageTk
 
 from datas.ifc_reader import load_ifc_data
-from datas.reinforcement_extractor import reinforcement_extract_properties
+from datas.reinforcement_extractor import extract_all_reinforcement_properties
 
-def analyze_reinforcement_data(ifc_file_paths, root):
-    
+def analyze_reinforcement_data(ifc_file_paths, result_frame):
     reinforcement_data = []
 
     # Iteriere über alle ausgewählten IFC-Dateien
@@ -15,10 +14,32 @@ def analyze_reinforcement_data(ifc_file_paths, root):
         try:
             # IFC-Datei laden und Eigenschaften extrahieren
             model = load_ifc_data(file_path)
-            data = reinforcement_extract_properties(model)
+            if not model:
+                print(f"Fehler beim Laden der Datei: {file_path}")
+                continue
+
+            data = extract_all_reinforcement_properties(model)
 
             if data:
-                reinforcement_data.extend(data)
+                # Filtere die relevanten Daten aus dem PropertySet "HGL_B2F"
+                filtered_data = []
+                for element in data:
+                    psets = element.get("PropertySets", {})
+                    if "HGL_B2F" in psets:
+                        listennummer = psets["HGL_B2F"].get("Listennummer", "Unbekannt")
+                        durchmesser = psets["HGL_B2F"].get("Durchmesser", "Unbekannt")
+                        gesamtgewicht = psets["HGL_B2F"].get("Stabgruppe Gewicht", 0.0)
+
+                        element_data = {
+                            "Listennummer": listennummer,
+                            "Material": element.get("Material", "Unbekannt"),
+                            "Durchmesser": durchmesser,
+                            "Gesamtgewicht": gesamtgewicht
+                        }
+                        filtered_data.append(element_data)
+
+                reinforcement_data.extend(filtered_data)
+                print(f"Extrahierte Daten aus Datei '{file_path}': {len(filtered_data)} Elemente")
             else:
                 messagebox.showinfo("Information", f"Keine Armierungseigenschaften im PropertySet 'HGL_B2F' in Datei '{file_path}' gefunden.")
 
@@ -29,16 +50,18 @@ def analyze_reinforcement_data(ifc_file_paths, root):
         messagebox.showinfo("Information", "Keine Armierungseigenschaften in den ausgewählten Dateien gefunden.")
         return
 
-    # Neues Fenster für die Ausgabe erstellen
-    output_window = tk.Toplevel(root)  # Verwende `root` anstelle von `self`
-    output_window.title("Armierungseigenschaften")
+    print(f"Anzahl der gesamten extrahierten Armierungselemente: {len(reinforcement_data)}")
+
+    # Lösche den Inhalt des Ergebnisrahmens, um Platz für neue Ergebnisse zu schaffen
+    for widget in result_frame.winfo_children():
+        widget.destroy()
 
     # Rahmen für den Text und die Scrollbar erstellen
-    frame = ttk.Frame(output_window)
+    frame = ctk.CTkFrame(result_frame)
     frame.pack(fill='both', expand=True)
 
     # Text-Widget erstellen, um die Ergebnisse zu zeigen
-    text_widget = tk.Text(frame, wrap='word')
+    text_widget = ctk.CTkTextbox(frame, wrap='word')
     text_widget.pack(side='left', fill='both', expand=True)
 
     # Scrollbar hinzufügen
@@ -48,11 +71,11 @@ def analyze_reinforcement_data(ifc_file_paths, root):
 
     # Ergebnisse in das Text-Widget schreiben
     for data in reinforcement_data:
-        text_widget.insert('end', f"Etappe: {data['Etappenbezeichnung']}\n")
-        text_widget.insert('end', f"Material: {data['Material']}\n")
-        text_widget.insert('end', f"Durchmesser: {data['Durchmesser']}\n")
-        text_widget.insert('end', f"Gesamtgewicht: {data['Gesamtgewicht']} kg\n")
-        text_widget.insert('end', f"Anzahl Eisen: {data['AnzahlEisen']}\n\n")
+        text_widget.insert('end', f"Listennummer: {data.get('Listennummer', 'Unbekannt')}\n")
+        text_widget.insert('end', f"Material: {data.get('Material', 'Unbekannt')}\n")
+        text_widget.insert('end', f"Durchmesser: {data.get('Durchmesser', 'Unbekannt')}\n")
+        text_widget.insert('end', f"Gesamtgewicht: {data.get('Gesamtgewicht', 0.0)} kg\n")
+        text_widget.insert('end', "\n")
 
     # Text-Widget nur lesbar machen
-    text_widget.config(state='disabled')
+    text_widget.configure(state='disabled')

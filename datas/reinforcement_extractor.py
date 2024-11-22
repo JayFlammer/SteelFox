@@ -1,54 +1,70 @@
 import ifcopenshell
-from ifcopenshell.util import element, pset
 
-def reinforcement_extract_properties(model):
+def extract_all_reinforcement_properties(model):
     """
-    Extrahiert und aggregiert die Eigenschaften der Armierung aus einem IFC-Modell.
-    Die Daten werden aufgeteilt in Etappen (Listennummer) > Material > Durchmesser und dann aggregiert.
+    Extrahiert alle Eigenschaften, PropertySets und Materialinformationen aus einem IFC-Modell.
+    Die Funktion gibt eine umfassende Liste von Eigenschaften jeder IfcReinforcingBar zurück.
+    
     :param model: IFC Modell
-    :return: Aggregierte Armierungseigenschaften als Liste von Dictionaries
+    :return: Liste von Dictionaries, die alle relevanten Eigenschaften enthalten
     """
     try:
         # Extrahiert alle IfcReinforcingBar-Elemente
         reinforcement_elements = model.by_type("IfcReinforcingBar")
 
-        # Struktur für aggregierte Daten initialisieren: Etappe > Material > Durchmesser
+        # Struktur für alle extrahierten Daten initialisieren
         reinforcement_data = []
 
         # Über alle Armierungselemente iterieren
         for element in reinforcement_elements:
-            # Initialisiere die Variablen
-            listennummer = None  # Entspricht der Etappenbezeichnung
-            material = None
-            durchmesser = None
-            stabgruppe_gewicht = 0.0
+            # Initialisiere Dictionary, um alle Informationen des Elements zu speichern
+            element_data = {
+                "GlobalId": element.GlobalId,
+                "Name": element.Name,
+                "Type": element.is_a(),
+                "PropertySets": {},
+                "Quantities": {},
+                "Material": None,
+            }
 
             # PropertySets des Elements durchsuchen
-            psets = pset.get_psets(element)
+            if hasattr(element, 'IsDefinedBy'):
+                for definition in element.IsDefinedBy:
+                    if definition.is_a("IfcRelDefinesByProperties"):
+                        property_set = definition.RelatingPropertyDefinition
+                        if property_set.is_a("IfcPropertySet"):
+                            pset_name = property_set.Name
+                            element_data["PropertySets"][pset_name] = {}
 
-            # HGL_B2F PropertySet überprüfen und benötigte Eigenschaften extrahieren
-            if "HGL_B2F" in psets:
-                listennummer = psets["HGL_B2F"].get("Etappenbezeichnung")
-                durchmesser = psets["HGL_B2F"].get("Durchmesser")
-                stabgruppe_gewicht = psets["HGL_B2F"].get("Stabgruppe Gewicht", 0.0)
-
-                # Um sicherzustellen, dass wir die Werte korrekt verarbeiten
-                listennummer = listennummer.wrappedValue if listennummer else None
-                durchmesser = durchmesser.wrappedValue if durchmesser else None
-                stabgruppe_gewicht = stabgruppe_gewicht.wrappedValue if stabgruppe_gewicht else 0.0
+                            # Alle Eigenschaften im PropertySet durchlaufen
+                            for prop in property_set.HasProperties:
+                                if prop.is_a("IfcPropertySingleValue"):
+                                    property_name = prop.Name
+                                    property_value = prop.NominalValue
+                                    if property_value:
+                                        element_data["PropertySets"][pset_name][property_name] = property_value.wrappedValue
+                                    else:
+                                        element_data["PropertySets"][pset_name][property_name] = "Kein Wert"
 
             # Materialinformationen extrahieren
-            material = element.get_material(element)
+            if hasattr(element, 'HasAssociations'):
+                for association in element.HasAssociations:
+                    if association.is_a("IfcRelAssociatesMaterial"):
+                        material = association.RelatingMaterial
+                        if hasattr(material, 'Name'):
+                            element_data["Material"] = material.Name
 
-            # Nur weiter machen, wenn wir alle nötigen Informationen haben
-            if listennummer and material and durchmesser:
-                # Extrahierte Daten in eine flache Struktur umwandeln und zur Liste hinzufügen
-                reinforcement_data.append({
-                    "Listennummer": listennummer,
-                    "Material": material.Name if material else "Unbekannt",
-                    "Durchmesser": durchmesser,
-                    "Gesamtgewicht": stabgruppe_gewicht
-                })
+            # Mengeninformationen extrahieren (falls verfügbar)
+            if hasattr(element, 'IsDefinedBy'):
+                for definition in element.IsDefinedBy:
+                    if definition.is_a("IfcRelDefinesByProperties") and hasattr(definition, 'RelatingPropertyDefinition'):
+                        if definition.RelatingPropertyDefinition.is_a("IfcElementQuantity"):
+                            quantity_set = definition.RelatingPropertyDefinition
+                            for quantity in quantity_set.Quantities:
+                                element_data["Quantities"][quantity.Name] = quantity.NominalValue.wrappedValue if hasattr(quantity, 'NominalValue') else "Kein Wert"
+
+            # Alle Eigenschaften des Elements in die Liste der Armierungsdaten einfügen
+            reinforcement_data.append(element_data)
 
         return reinforcement_data
 

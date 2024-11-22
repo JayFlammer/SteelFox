@@ -75,7 +75,7 @@ class SteelFoxApp:
 
 
     def upload_reinforcement_auschreibung(self):
-        file_paths = filedialog.askopenfilenames(filetypes=[("IFC files", "*.ifc")])
+        file_paths = filedialog.askopenfilenames(filetypes=[("Excel file", "*.xlsx")])
         if file_paths:
             self.xlsx_auschreibung_paths = list(file_paths)
             # Button grün markieren und den Status aktualisieren
@@ -99,8 +99,8 @@ class SteelFoxApp:
 
     def start_analysis(self):
         try:
-            # Hier die eigentliche Analyse durchführen
-            analyze_reinforcement_data(self.ifc_ausfuehrung_paths, self.root)
+            # Übergabe des result_frame für die Ergebnisanzeige
+            analyze_reinforcement_data(self.ifc_ausfuehrung_paths, self.result_frame)
         except Exception as e:
             messagebox.showerror("Fehler", f"Fehler bei der Analyse: {str(e)}")
 
