@@ -1,12 +1,46 @@
 import customtkinter as ctk
-from tkinter import ttk
 from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk
 
 from datas.ifc_reader import load_ifc_data
 from datas.reinforcement_extractor import extract_all_reinforcement_properties
+import os
+from supabase import create_client, Client
+from dotenv import load_dotenv
 
-def analyze_reinforcement_data(ifc_file_paths, result_frame):
+# Laden der Umgebungsvariablen
+load_dotenv()
+
+# Supabase-Zugangsdaten abrufen
+supabase_url = os.getenv("SUPABASE_URL")
+supabase_key = os.getenv("SUPABASE_API_KEY")
+
+# Supabase-Client erstellen
+if supabase_url and supabase_key:
+    supabase: Client = create_client(supabase_url, supabase_key)
+else:
+    raise Exception("SUPABASE_URL und SUPABASE_API_KEY sind erforderlich.")
+
+# Daten aus reinforcement_data in Supabase-Datenbank einfügen
+def insert_reinforcement_data(reinforcement_data):
+    for data in reinforcement_data:
+        try:
+            response = supabase.table("reinforcement_data").insert({
+                "listennummer": data.get("Listennummer", "Unbekannt"),
+                "material": data.get("Material", "Unbekannt"),
+                "durchmesser": data.get("Durchmesser", "Unbekannt"),
+                "gesamtgewicht": data.get("Gesamtgewicht", 0.0)
+            }).execute()
+            
+            if response.data:
+                print(f"Daten erfolgreich eingefügt: {response.data}")
+            else:
+                print("Fehler beim Einfügen der Daten.")
+        except Exception as e:
+            print(f"Ein Fehler ist aufgetreten: {e}")
+
+# Funktion zur Analyse und Hochladen der Armierungsdaten
+def analyze_reinforcement_data(ifc_file_paths):
     reinforcement_data = []
 
     # Iteriere über alle ausgewählten IFC-Dateien
@@ -52,86 +86,5 @@ def analyze_reinforcement_data(ifc_file_paths, result_frame):
 
     print(f"Anzahl der gesamten extrahierten Armierungselemente: {len(reinforcement_data)}")
 
-    # Lösche den Inhalt des Ergebnisrahmens, um Platz für neue Ergebnisse zu schaffen
-    for widget in result_frame.winfo_children():
-        widget.destroy()
-
-    # Rahmen für den Text und die Scrollbar erstellen
-    frame = ctk.CTkFrame(result_frame)
-    frame.pack(fill='both', expand=True)
-
-    # Text-Widget erstellen, um die Ergebnisse zu zeigen
-    text_widget = ctk.CTkTextbox(frame, wrap='word')
-    text_widget.pack(side='left', fill='both', expand=True)
-
-    # Scrollbar hinzufügen
-    scrollbar = ttk.Scrollbar(frame, command=text_widget.yview)
-    scrollbar.pack(side='right', fill='y')
-    text_widget['yscrollcommand'] = scrollbar.set
-
-    # Ergebnisse in das Text-Widget schreiben
-    for data in reinforcement_data:
-        text_widget.insert('end', f"Listennummer: {data.get('Listennummer', 'Unbekannt')}\n")
-        text_widget.insert('end', f"Material: {data.get('Material', 'Unbekannt')}\n")
-        text_widget.insert('end', f"Durchmesser: {data.get('Durchmesser', 'Unbekannt')}\n")
-        text_widget.insert('end', f"Gesamtgewicht: {data.get('Gesamtgewicht', 0.0)} kg\n")
-        text_widget.insert('end', "\n")
-
-
-
-    # Text-Widget nur lesbar machen
-    text_widget.configure(state='disabled')
-
-
-import os
-from supabase import create_client, Client
-from dotenv import load_dotenv
-
-# Laden der Umgebungsvariablen
-load_dotenv()
-
-# Supabase-Zugangsdaten abrufen
-supabase_url = os.getenv("SUPABASE_URL")
-supabase_key = os.getenv("SUPABASE_API_KEY")
-
-# Supabase-Client erstellen
-if supabase_url and supabase_key:
-    supabase: Client = create_client(supabase_url, supabase_key)
-else:
-    raise Exception("SUPABASE_URL und SUPABASE_API_KEY sind erforderlich.")
-
-# Daten aus reinforcement_data in Supabase-Datenbank einfügen
-def insert_reinforcement_data(reinforcement_data):
-    for data in reinforcement_data:
-        try:
-            response = supabase.table("reinforcement_data").insert({
-                "listennummer": data.get("Listennummer", "Unbekannt"),
-                "material": data.get("Material", "Unbekannt"),
-                "durchmesser": data.get("Durchmesser", "Unbekannt"),
-                "gesamtgewicht": data.get("Gesamtgewicht", 0.0)
-            }).execute()
-            
-            if response.data:
-                print(f"Daten erfolgreich eingefügt: {response.data}")
-            else:
-                print("Fehler beim Einfügen der Daten.")
-        except Exception as e:
-            print(f"Ein Fehler ist aufgetreten: {e}")
-
-# Beispiel für das Einfügen der Daten
-reinforcement_data = [
-    {
-        "Listennummer": "123",
-        "Material": "Stahl",
-        "Durchmesser": "12mm",
-        "Gesamtgewicht": 150.5
-    },
-    {
-        "Listennummer": "124",
-        "Material": "Edelstahl",
-        "Durchmesser": "10mm",
-        "Gesamtgewicht": 120.0
-    }
-]
-
-insert_reinforcement_data(reinforcement_data)
+    # Daten in die Datenbank hochladen
+    insert_reinforcement_data(reinforcement_data)
