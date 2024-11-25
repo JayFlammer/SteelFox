@@ -74,17 +74,11 @@ def analyze_reinforcement_data(ifc_file_paths):
 
                 reinforcement_data.extend(filtered_data)
                 print(f"Extrahierte Daten aus Datei '{file_path}': {len(filtered_data)} Elemente")
-            else:
-                messagebox.showinfo("Information", f"Keine Armierungseigenschaften im PropertySet 'HGL_B2F' in Datei '{file_path}' gefunden.")
-
         except Exception as e:
-            messagebox.showerror("Fehler", f"Fehler beim Laden der IFC-Datei '{file_path}': {str(e)}")
-
-    if not reinforcement_data:
-        messagebox.showinfo("Information", "Keine Armierungseigenschaften in den ausgewählten Dateien gefunden.")
-        return
-
-    print(f"Anzahl der gesamten extrahierten Armierungselemente: {len(reinforcement_data)}")
+            print(f"Fehler beim Verarbeiten der Datei '{file_path}': {str(e)}")
 
     # Daten in die Datenbank hochladen
-    insert_reinforcement_data(reinforcement_data)
+    if reinforcement_data:
+        insert_reinforcement_data(reinforcement_data)
+    else:
+        print("Keine Armierungseigenschaften in den ausgewählten Dateien gefunden.")

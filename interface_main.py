@@ -271,12 +271,7 @@ class SteelFoxApp:
     def start_analysis(self):
         try:
             # Übergabe des result_frame für die Ergebnisanzeige
-            analyze_reinforcement_data(self.ifc_ausfuehrung_paths, self.result_frame)
+            analyze_reinforcement_data(self.ifc_ausfuehrung_paths)
         except Exception as e:
             messagebox.showerror("Fehler", f"Fehler bei der Analyse: {str(e)}")
 
-# Hauptprogramm starten
-if __name__ == "__main__":
-    root = ctk.CTk()
-    app = SteelFoxApp(root)
-    root.mainloop()
