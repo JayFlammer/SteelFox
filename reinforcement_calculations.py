@@ -77,5 +77,61 @@ def analyze_reinforcement_data(ifc_file_paths, result_frame):
         text_widget.insert('end', f"Gesamtgewicht: {data.get('Gesamtgewicht', 0.0)} kg\n")
         text_widget.insert('end', "\n")
 
+
+
     # Text-Widget nur lesbar machen
     text_widget.configure(state='disabled')
+
+
+import os
+from supabase import create_client, Client
+from dotenv import load_dotenv
+
+# Laden der Umgebungsvariablen
+load_dotenv()
+
+# Supabase-Zugangsdaten abrufen
+supabase_url = os.getenv("SUPABASE_URL")
+supabase_key = os.getenv("SUPABASE_API_KEY")
+
+# Supabase-Client erstellen
+if supabase_url and supabase_key:
+    supabase: Client = create_client(supabase_url, supabase_key)
+else:
+    raise Exception("SUPABASE_URL und SUPABASE_API_KEY sind erforderlich.")
+
+# Daten aus reinforcement_data in Supabase-Datenbank einfügen
+def insert_reinforcement_data(reinforcement_data):
+    for data in reinforcement_data:
+        try:
+            response = supabase.table("reinforcement_data").insert({
+                "listennummer": data.get("Listennummer", "Unbekannt"),
+                "material": data.get("Material", "Unbekannt"),
+                "durchmesser": data.get("Durchmesser", "Unbekannt"),
+                "gesamtgewicht": data.get("Gesamtgewicht", 0.0)
+            }).execute()
+            
+            if response.data:
+                print(f"Daten erfolgreich eingefügt: {response.data}")
+            else:
+                print("Fehler beim Einfügen der Daten.")
+        except Exception as e:
+            print(f"Ein Fehler ist aufgetreten: {e}")
+
+# Beispiel für das Einfügen der Daten
+reinforcement_data = [
+    {
+        "Listennummer": "123",
+        "Material": "Stahl",
+        "Durchmesser": "12mm",
+        "Gesamtgewicht": 150.5
+    },
+    {
+        "Listennummer": "124",
+        "Material": "Edelstahl",
+        "Durchmesser": "10mm",
+        "Gesamtgewicht": 120.0
+    }
+]
+
+insert_reinforcement_data(reinforcement_data)

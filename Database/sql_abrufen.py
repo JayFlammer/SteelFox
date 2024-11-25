@@ -18,7 +18,7 @@ else:
 # Funktion zum Abrufen der Preise
 def get_prices():
     try:
-        response = supabase.table("preise").select("*").execute()
+        response = supabase.table("preise").select("preisindex").execute()
         # Prüfen, ob Daten in der Antwort enthalten sind
         if response.data:
             # Daten abrufen und ausgeben
