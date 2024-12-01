@@ -2,16 +2,18 @@ import customtkinter as ctk
 from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk
 
+import json
+
 from reinforcement_calculations import analyze_reinforcement_data
 
-from interface.ui_Components.frame_main import create_main_frame
-from interface.ui_Components.title_canvas import create_title_canvas
-from interface.ui_Components.logo_steelfox import add_steelfox_logo
-from interface.ui_Components.logo_halter import add_halter_logo
-from interface.ui_Components.title_steelfox import add_steelfox_text
-from interface.ui_Components.frame_input import create_input_frame
-from interface.ui_Components.frame_result import create_result_frame
-from interface.ui_Components.version_label import create_version_label
+from interface.ui_main.frame_main import create_main_frame
+from interface.ui_main.title_canvas import create_title_canvas
+from interface.ui_main.logo_steelfox import add_steelfox_logo
+from interface.ui_main.logo_halter import add_halter_logo
+from interface.ui_main.title_steelfox import add_steelfox_text
+from interface.ui_main.frame_input import create_input_frame
+from interface.ui_main.frame_result import create_result_frame
+from interface.ui_main.version_label import create_version_label
 
 class SteelFoxApp:
     def __init__(self, root):
@@ -24,6 +26,9 @@ class SteelFoxApp:
         # Event für den Vollbildmodus hinzufügen
         self.root.bind('<F11>', self.toggle_fullscreen)
         self.root.bind('<Escape>', self.exit_fullscreen)
+
+        # Login-Daten laden
+        self.login_data = self.load_login_data()
 
         # Titel-Canvas immer sichtbar machen
         self.title_canvas = create_title_canvas(self.root)
@@ -40,7 +45,22 @@ class SteelFoxApp:
         # Start mit dem Anmeldeframe
         self.show_login_frame()
 
+    def load_login_data(self):
+        """Lädt die Login-Daten aus einer JSON-Datei."""
+        try:
+            with open("login_daten.json", "r") as file:
+                data = json.load(file)
+                return data.get("users", [])
+        except FileNotFoundError:
+            messagebox.showerror("Fehler", "Die Datei 'login_daten.json' wurde nicht gefunden.")
+            return []
+        except json.JSONDecodeError:
+            messagebox.showerror("Fehler", "Die Datei 'login_daten.json' ist fehlerhaft.")
+            return []
+
     def show_login_frame(self):
+
+
         """Zeigt das Anmeldeframe an"""
         self.login_frame = ctk.CTkFrame(self.root)
         self.login_frame.pack(fill="both", expand=True)
@@ -69,11 +89,12 @@ class SteelFoxApp:
         password = self.password_entry.get()
 
         # Überprüfen, ob ID und Passwort korrekt sind
-        if user_id == "Admin" and password == "1234":
-            self.welcome_label.configure(text=f"Willkommen zurück, {self.id_entry.get()}")
-            self.show_selection_screen()  # Wechsel zum Auswahl-Screen
-        else:
-            ctk.CTkLabel(self.login_frame, text="Ungültige Anmeldedaten", text_color="red").pack(pady=10)
+        for user in self.login_data:
+            if user['id'] == user_id and user['password'] == password:
+                self.welcome_label.configure(text=f"Willkommen zurück, {user_id}")
+                self.show_selection_screen()  # Wechsel zum Auswahl-Screen
+                return
+        ctk.CTkLabel(self.login_frame, text="Ungültige Anmeldedaten", text_color="red").pack(pady=10)
 
     def show_selection_screen(self):
         """Zeigt einen schwarzen Screen mit Auswahlmöglichkeiten an"""
@@ -274,4 +295,3 @@ class SteelFoxApp:
             analyze_reinforcement_data(self.ifc_ausfuehrung_paths)
         except Exception as e:
             messagebox.showerror("Fehler", f"Fehler bei der Analyse: {str(e)}")
-
