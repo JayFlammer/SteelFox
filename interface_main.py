@@ -39,11 +39,19 @@ class SteelFoxApp:
         self.welcome_label = ctk.CTkLabel(self.title_canvas, text="", font=("Helvetica", 16, "bold"), text_color="white")
         self.welcome_label.pack(side="top", pady=10, anchor="center")
         add_halter_logo(self.title_canvas)
+
+        self.title_text = ""  # Anfangs leer
+
         self.welcome_label.place(relx=0.5, rely=0.5, anchor='center')
         self.welcome_label.lift()
 
         # Start mit dem Anmeldeframe
         self.show_login_frame()
+
+    def update_title_text(self, new_text):
+        """Aktualisiert den Titeltext und das zugehörige Label."""
+        self.title_text = new_text
+        self.welcome_label.configure(text=self.title_text)
 
     def load_login_data(self):
         """Lädt die Login-Daten aus einer JSON-Datei."""
@@ -59,8 +67,6 @@ class SteelFoxApp:
             return []
 
     def show_login_frame(self):
-
-
         """Zeigt das Anmeldeframe an"""
         self.login_frame = ctk.CTkFrame(self.root)
         self.login_frame.pack(fill="both", expand=True)
@@ -91,7 +97,7 @@ class SteelFoxApp:
         # Überprüfen, ob ID und Passwort korrekt sind
         for user in self.login_data:
             if user['id'] == user_id and user['password'] == password:
-                self.welcome_label.configure(text=f"Willkommen zurück, {user_id}")
+                self.update_title_text(f"Willkommen zurück, {user_id}")
                 self.show_selection_screen()  # Wechsel zum Auswahl-Screen
                 return
         ctk.CTkLabel(self.login_frame, text="Ungültige Anmeldedaten", text_color="red").pack(pady=10)
