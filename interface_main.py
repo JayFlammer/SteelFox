@@ -68,7 +68,7 @@ class SteelFoxApp:
 
     def show_login_frame(self):
         """Zeigt das Anmeldeframe an"""
-        self.login_frame = ctk.CTkFrame(self.root)
+        self.login_frame = ctk.CTkFrame(self.root, corner_radius=0)
         self.login_frame.pack(fill="both", expand=True)
 
         # Label und Eingabefelder
