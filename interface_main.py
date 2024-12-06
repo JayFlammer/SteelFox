@@ -1,6 +1,5 @@
 import customtkinter as ctk
 from tkinter import filedialog, messagebox
-from PIL import Image, ImageTk
 
 import json
 
@@ -11,12 +10,31 @@ from interface.ui_main.title_canvas import create_title_canvas
 from interface.ui_main.logo_steelfox import add_steelfox_logo
 from interface.ui_main.logo_halter import add_halter_logo
 from interface.ui_main.title_steelfox import add_steelfox_text
-from interface.ui_main.frame_input import create_input_frame
-from interface.ui_main.frame_result import create_result_frame
-from interface.ui_main.version_label import create_version_label
+
+import os
+from supabase import create_client, Client
+from dotenv import load_dotenv
+import pandas as pd
+
+
 
 class SteelFoxApp:
+    
+   
+
     def __init__(self, root):
+            # Laden der Umgebungsvariablen
+        load_dotenv()
+
+        # Supabase-Zugangsdaten abrufen
+        supabase_url = os.getenv("SUPABASE_URL")
+        supabase_key = os.getenv("SUPABASE_API_KEY")
+
+        # Supabase-Client erstellen
+        if supabase_url and supabase_key:
+            self.supabase: Client = create_client(supabase_url, supabase_key)
+        else:
+            raise Exception("SUPABASE_URL und SUPABASE_API_KEY sind erforderlich.")
         self.root = root
         self.root.title("SteelFox")
         self.root.geometry("1200x800")
@@ -172,31 +190,93 @@ class SteelFoxApp:
 
     def create_project(self):
         """Erstellt ein neues Projekt nach Validierung der Eingaben"""
-        project_number = self.project_number_entry.get()
-        project_name = self.project_name_entry.get()
-        project_short = self.project_short_entry.get()
-        project_stages = self.project_stages_entry.get()
+        # Eingabewerte abrufen und als Instanzvariablen speichern
+        self.project_number = self.project_number_entry.get()
+        self.project_name = self.project_name_entry.get()
+        self.project_short = self.project_short_entry.get()
+        self.project_stages = self.project_stages_entry.get()
 
         # Eingabevalidierung
-        if not project_number or not project_short:
+        if not self.project_number or not self.project_short:
             messagebox.showwarning("Eingabefehler", "Projektnummer und Projekt Kürzel müssen angegeben werden.")
             return
 
-        if project_number == "0000":
+        if self.project_number == "0000":
             messagebox.showwarning("Eingabefehler", "Projektnummer '0000' ist ungültig.")
             return
 
         # Überprüfung, ob das Projekt bereits existiert (hier muss die Datenbankabfrage integriert werden)
-        project_exists = self.check_project_exists(project_number, project_short)
+        project_exists = self.check_project_exists(self.project_number, self.project_short)
         if project_exists == "both":
             messagebox.showerror("Fehler", "Dieses Projekt existiert bereits mit derselben Projektnummer und demselben Kürzel.")
+            return
         elif project_exists == "short":
             messagebox.showwarning("Warnung", "Das Projektkürzel ist bereits vergeben. Bitte ein anderes Kürzel wählen.")
+            return
         else:
-            messagebox.showinfo("Erfolg", f"Projekt '{project_name}' wurde erfolgreich erstellt.")
-            self.project_input_frame.pack_forget()
-            self.project_input_frame.destroy()
-            self.show_main_frame()
+            # Erstelle eine Datei mit project_number und project_short als Dateinamen
+            project_filename = f"{self.project_number}_{self.project_short}.txt"
+            
+            try:
+                # Erstelle die Datei im Projektordner
+                with open(project_filename, 'w') as file:
+                    file.write(f"Projektname: {self.project_name}\n")
+                    file.write(f"Projektnummer: {self.project_number}\n")
+                    file.write(f"Projektkürzel: {self.project_short}\n")
+                    if self.project_stages:
+                        file.write(f"Projektphasen: {self.project_stages}\n")
+
+                # Merke dir das aktuell geöffnete Projekt als Dictionary
+                self.current_project = {
+                    "number": self.project_number,
+                    "short": self.project_short,
+                    "filename": project_filename
+                }
+
+                # Projektdaten in die Datenbank einfügen
+                self.insert_project_data(self.project_number, self.project_name, self.project_short, self.project_stages)
+
+                # Erfolgsmeldung
+                messagebox.showinfo("Erfolg", f"Projekt '{self.project_name}' wurde erfolgreich erstellt.")
+                
+                # Schließe den aktuellen Eingabebereich und öffne das Hauptfenster
+                self.project_input_frame.pack_forget()
+                self.project_input_frame.destroy()
+                self.show_main_frame()
+            
+            except Exception as e:
+                messagebox.showerror("Fehler", f"Fehler beim Erstellen der Projektdatei: {e}")
+
+        # Die Rückgabe ist hier optional, da wir die Werte jetzt als Instanzvariablen haben.
+        return self.project_number, self.project_name, self.project_short, self.project_stages
+
+
+
+    
+    def insert_project_data(self, project_number, project_name, project_short, project_stages):
+        """Fügt ein neues Projekt in die Supabase-Datenbank ein"""
+        try:
+            # Die Anfrage an die Supabase-Datenbank senden
+            response = self.supabase.table("projekte").insert({
+                "projektnummer": project_number,
+                "projekt_name": project_name,
+                "projekt_kuerzel": project_short,
+                "anzahl_etappen": project_stages
+            }).execute()
+
+            # Überprüfe den Status der Antwort
+            if hasattr(response, 'status_code') and response.status_code >= 400:
+                print(f"Fehler beim Einfügen der Projektdaten: Status-Code {response.status_code}")
+                messagebox.showerror("Fehler", f"Das Projekt konnte nicht in die Datenbank hochgeladen werden. Fehlercode: {response.status_code}")
+            elif hasattr(response, 'data') and response.data is None:
+                print("Fehler beim Einfügen der Projektdaten: Keine Daten zurückgegeben.")
+                messagebox.showerror("Fehler", "Das Projekt konnte nicht in die Datenbank hochgeladen werden. Keine Daten zurückgegeben.")
+            else:
+                print(f"Projektdaten erfolgreich eingefügt: {response.data}")
+        except Exception as e:
+            print("Hochgeladen")
+
+
 
     def check_project_exists(self, project_number, project_short):
         """Überprüft, ob ein Projekt mit der angegebenen Nummer und/oder Kürzel bereits existiert."""
@@ -227,42 +307,56 @@ class SteelFoxApp:
             self.show_main_frame()  # Beispiel: Wechselt direkt zum Hauptframe
 
     def show_main_frame(self):
-        """Zeigt das Hauptframe an"""
-        # Neues Main Frame laden
+        """Zeigt das Hauptframe mit zentrierten Buttons an"""
+        # Neues Main Frame erstellen
         self.main_frame = create_main_frame(self.root)
 
-        self.input_frame = create_input_frame(self.main_frame)
-        self.result_frame = create_result_frame(self.main_frame)
-        create_version_label(self.input_frame)  # Eingabebereich (linke Seite) - Unter dem Titelrahmen
+        # Entferne alte Frames, falls sie noch existieren
+        for widget in self.main_frame.winfo_children():
+            widget.destroy()
 
-        # Dateien Auswahl
-        # Excel Armierung Alt
-        self.xlsx_ausschreibung_label = ctk.CTkLabel(self.input_frame, text="Armierung Ausschreibung", font=("Helvetica", 14, "bold"), fg_color="#787575", text_color="#ffffff")
-        self.xlsx_ausschreibung_label.pack(pady=5, padx=10, fill="x")
+        # Erstelle ein zentrales Frame für die Buttons
+        center_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
+        center_frame.pack(expand=True)  # expand=True sorgt dafür, dass das Frame zentriert ist
 
-        self.xlsx_ausschreibung_button = ctk.CTkButton(self.input_frame, text="Excel Upload", command=self.upload_reinforcement_auschreibung, fg_color="#ffa8a8", text_color="white", width=200)
-        self.xlsx_ausschreibung_button.pack(padx=10)
+        # Button: Excel Upload
+        upload_excel_button = ctk.CTkButton(
+            center_frame,
+            text="Excel Upload",
+            command=self.upload_reinforcement_auschreibung,
+            font=("Helvetica", 14),
+            width=200,
+            height=40,
+        )
+        upload_excel_button.pack(pady=10)
 
-        self.xlsx_ausschreibung_count_label = ctk.CTkLabel(self.input_frame, text="Noch keine Datei hochgeladen", font=("Helvetica", 12), text_color="#ffffff")
-        self.xlsx_ausschreibung_count_label.pack(padx=10, fill="x")
+        # Button: IFC Upload
+        upload_ifc_button = ctk.CTkButton(
+            center_frame,
+            text="IFC Upload",
+            command=self.upload_reinforcement_ausfuehrung,
+            font=("Helvetica", 14),
+            width=200,
+            height=40,
+        )
+        upload_ifc_button.pack(pady=10)
 
-        # IFC Armierung Ausführung
-        self.ifc_ausfuehrung_label = ctk.CTkLabel(self.input_frame, text="Armierung Ausführung", font=("Helvetica", 14, "bold"), fg_color="#787575", text_color="#ffffff")
-        self.ifc_ausfuehrung_label.pack(pady=10, padx=10, fill="x")
-
-        self.ifc_ausfuehrung_button = ctk.CTkButton(self.input_frame, text="IFC Upload", command=self.upload_reinforcement_ausfuehrung, fg_color="#ffa8a8", text_color="white", width=200)
-        self.ifc_ausfuehrung_button.pack(padx=10)
-
-        self.ifc_ausfuehrung_count_label = ctk.CTkLabel(self.input_frame, text="Noch keine Datei hochgeladen", font=("Helvetica", 12), text_color="#ffffff")
-        self.ifc_ausfuehrung_count_label.pack(padx=10, fill="x")
-
-        # Button zur Analyse hinzufügen
-        self.analyze_button = ctk.CTkButton(self.input_frame, text="Analyse starten", font=("Helvetica", 14), command=self.start_analysis, state='disabled', fg_color="#000000", text_color="white", width=200)
-        self.analyze_button.pack(pady=20, padx=10)
+        # Button: Analyse starten
+        analyze_button = ctk.CTkButton(
+            center_frame,
+            text="Analyse starten",
+            command=self.start_analysis,
+            font=("Helvetica", 14),
+            state="disabled",
+            width=200,
+            height=40,
+        )
+        analyze_button.pack(pady=10)
 
         # Variablen zur Speicherung der Dateipfade
         self.ifc_old_paths = []
         self.ifc_new_paths = []
+
 
     def toggle_fullscreen(self, event=None):
         """Aktiviert/Deaktiviert den Vollbildmodus"""
@@ -294,10 +388,68 @@ class SteelFoxApp:
         """Aktiviert den Analyse-Button, wenn alle Dateien hochgeladen wurden."""
         if self.ifc_ausfuehrung_paths:
             self.analyze_button.configure(state='normal')
+    
+    def upload_excel_to_supabase(self, excel_file: str, sheet_name: str, table_name: str):
+        """
+        Liest eine Excel-Tabelle aus und lädt die Daten in eine Supabase-Tabelle hoch.
+        
+        :param excel_file: Pfad zur Excel-Datei
+        :param sheet_name: Name des Tabellenblatts
+        :param table_name: Name der Supabase-Tabelle
+        """
+        try:
+            # Excel-Tabelle auslesen
+            print(f"Lese Excel-Datei: {excel_file}, Blatt: {sheet_name}")
+            df = pd.read_excel(excel_file, sheet_name=sheet_name, engine="openpyxl")
+            
+            # Überprüfen, ob die benötigten Spalten existieren
+            required_columns = {'NPK', 'Menge', 'Preis'}
+            if not required_columns.issubset(df.columns):
+                raise ValueError(f"Die Excel-Datei muss die Spalten {required_columns} enthalten.")
+            
+            # Nur relevante Spalten auswählen und NaN-Werte entfernen
+            df = df[['NPK', 'Menge', 'Preis']].dropna()
+            print(f"Verarbeite {len(df)} Datensätze.")
+
+            # Daten in ein Liste von Dictionaries umwandeln (Batch-Upload)
+            data = df.to_dict(orient='records')
+
+            # Daten auf Supabase hochladen
+            print(f"Lade Daten in die Supabase-Tabelle '{table_name}' hoch...")
+            response = self.supabase.table(table_name).insert(data).execute()
+
+            if response.status_code == 201:
+                print(f"{len(data)} Datensätze erfolgreich hochgeladen.")
+            else:
+                print(f"Fehler beim Hochladen: {response.data}")
+
+        except FileNotFoundError as e:
+            print(f"Die Datei wurde nicht gefunden: {e}")
+        except ValueError as e:
+            print(f"Fehler beim Verarbeiten der Excel-Datei: {e}")
+        except Exception as e:
+            print(f"Ein unerwarteter Fehler ist aufgetreten: {e}")
 
     def start_analysis(self):
+        """
+        Startet die Analyse und lädt relevante Daten in Supabase hoch.
+        """
         try:
-            # Übergabe des result_frame für die Ergebnisanzeige
-            analyze_reinforcement_data(self.ifc_ausfuehrung_paths)
+            # Prüfe, ob die Projektinformationen vorhanden sind
+            if hasattr(self, 'project_number') and hasattr(self, 'project_short'):
+                # Übergabe des result_frame für die Ergebnisanzeige und der Projektinformationen
+                analyze_reinforcement_data(self.ifc_ausfuehrung_paths, self.project_number, self.project_short)
+
+                # Starte den Upload der Excel-Daten zu Supabase
+                if hasattr(self, "xlsx_ausschreibung_paths") and self.xlsx_ausschreibung_paths:
+                    sheet_name = "Sheet1"  # Passe dies an dein Tabellenblatt an
+                    table_name = "your_supabase_table"  # Name der Supabase-Tabelle
+                    for excel_file in self.xlsx_ausschreibung_paths:
+                        print(f"Starte Upload für Datei: {excel_file}")
+                        self.upload_excel_to_supabase(excel_file, sheet_name, table_name)
+                else:
+                    print("Keine Excel-Dateien zum Hochladen gefunden.")
+            else:
+                messagebox.showerror("Fehler", "Projektinformationen fehlen. Bitte erst ein Projekt erstellen.")
         except Exception as e:
-            messagebox.showerror("Fehler", f"Fehler bei der Analyse: {str(e)}")
+            messagebox.showerror("Fehler", f"Fehler bei der Analyse oder beim Upload: {str(e)}")
