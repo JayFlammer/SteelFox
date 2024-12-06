@@ -10,6 +10,9 @@ from interface.ui_main.title_canvas import create_title_canvas
 from interface.ui_main.logo_steelfox import add_steelfox_logo
 from interface.ui_main.logo_halter import add_halter_logo
 from interface.ui_main.title_steelfox import add_steelfox_text
+from interface.ui_main.frame_input import create_input_frame
+from interface.ui_main.frame_result import create_result_frame
+from interface.ui_main.version_label import create_version_label
 
 import os
 from supabase import create_client, Client
@@ -307,56 +310,49 @@ class SteelFoxApp:
             self.show_main_frame()  # Beispiel: Wechselt direkt zum Hauptframe
 
     def show_main_frame(self):
-        """Zeigt das Hauptframe mit zentrierten Buttons an"""
-        # Neues Main Frame erstellen
+        """Zeigt das Hauptframe an"""
+        # Neues Main Frame laden
         self.main_frame = create_main_frame(self.root)
 
-        # Entferne alte Frames, falls sie noch existieren
-        for widget in self.main_frame.winfo_children():
-            widget.destroy()
+        self.input_frame = create_input_frame(self.main_frame)
+        self.result_frame = create_result_frame(self.main_frame)
+        create_version_label(self.input_frame)  # Eingabebereich (linke Seite) - Unter dem Titelrahmen
 
-        # Erstelle ein zentrales Frame für die Buttons
-        center_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
-        center_frame.pack(expand=True)  # expand=True sorgt dafür, dass das Frame zentriert ist
+        # Dateien Auswahl
+        # Excel Armierung Alt
+        self.xlsx_ausschreibung_label = ctk.CTkLabel(self.input_frame, text="Armierung Ausschreibung", font=("Helvetica", 14, "bold"), fg_color="#787575", text_color="#ffffff")
+        self.xlsx_ausschreibung_label.pack(pady=5, padx=10, fill="x")
 
-        # Button: Excel Upload
-        upload_excel_button = ctk.CTkButton(
-            center_frame,
-            text="Excel Upload",
-            command=self.upload_reinforcement_auschreibung,
-            font=("Helvetica", 14),
-            width=200,
-            height=40,
-        )
-        upload_excel_button.pack(pady=10)
+        self.xlsx_ausschreibung_button = ctk.CTkButton(self.input_frame, text="Excel Upload", command=self.upload_reinforcement_auschreibung, fg_color="#ffa8a8", text_color="white", width=200)
+        self.xlsx_ausschreibung_button.pack(padx=10)
 
-        # Button: IFC Upload
-        upload_ifc_button = ctk.CTkButton(
-            center_frame,
-            text="IFC Upload",
-            command=self.upload_reinforcement_ausfuehrung,
-            font=("Helvetica", 14),
-            width=200,
-            height=40,
-        )
-        upload_ifc_button.pack(pady=10)
+        self.xlsx_ausschreibung_count_label = ctk.CTkLabel(self.input_frame, text="Noch keine Datei hochgeladen", font=("Helvetica", 12), text_color="#ffffff")
+        self.xlsx_ausschreibung_count_label.pack(padx=10, fill="x")
 
-        # Button: Analyse starten
-        analyze_button = ctk.CTkButton(
-            center_frame,
-            text="Analyse starten",
-            command=self.start_analysis,
-            font=("Helvetica", 14),
-            state="disabled",
-            width=200,
-            height=40,
-        )
-        analyze_button.pack(pady=10)
+        # Eingabefeld für Datum der Unterzeichnung des Werkvertrags
+        self.date_label = ctk.CTkLabel(self.input_frame, text="Datum der Unterzeichnung des Werkvertrags (TT.MM.JJJJ):", font=("Helvetica", 12), text_color="#ffffff")
+        self.date_label.pack(pady=(10, 5), padx=10, fill="x")
+
+        self.date_entry = ctk.CTkEntry(self.input_frame, placeholder_text="TT.MM.JJJJ", font=("Helvetica", 12), width=200)
+        self.date_entry.pack(pady=5, padx=10)
+
+        # IFC Armierung Ausführung
+        self.ifc_ausfuehrung_label = ctk.CTkLabel(self.input_frame, text="Armierung Ausführung", font=("Helvetica", 14, "bold"), fg_color="#787575", text_color="#ffffff")
+        self.ifc_ausfuehrung_label.pack(pady=10, padx=10, fill="x")
+
+        self.ifc_ausfuehrung_button = ctk.CTkButton(self.input_frame, text="IFC Upload", command=self.upload_reinforcement_ausfuehrung, fg_color="#ffa8a8", text_color="white", width=200)
+        self.ifc_ausfuehrung_button.pack(padx=10)
+
+        self.ifc_ausfuehrung_count_label = ctk.CTkLabel(self.input_frame, text="Noch keine Datei hochgeladen", font=("Helvetica", 12), text_color="#ffffff")
+        self.ifc_ausfuehrung_count_label.pack(padx=10, fill="x")
+
+        # Button zur Analyse hinzufügen
+        self.analyze_button = ctk.CTkButton(self.input_frame, text="Analyse starten", font=("Helvetica", 14), command=self.start_analysis, state='disabled', fg_color="#000000", text_color="white", width=200)
+        self.analyze_button.pack(pady=20, padx=10)
 
         # Variablen zur Speicherung der Dateipfade
         self.ifc_old_paths = []
         self.ifc_new_paths = []
-
 
     def toggle_fullscreen(self, event=None):
         """Aktiviert/Deaktiviert den Vollbildmodus"""
@@ -369,7 +365,7 @@ class SteelFoxApp:
     def upload_reinforcement_auschreibung(self):
         file_paths = filedialog.askopenfilenames(filetypes=[("Excel file", "*.xlsx")])
         if file_paths:
-            self.xlsx_auschreibung_paths = list(file_paths)
+            self.xlsx_ausschreibung_paths = list(file_paths)
             # Button grün markieren und den Status aktualisieren
             self.xlsx_ausschreibung_button.configure(fg_color="#83fc83", text_color="white")
             self.xlsx_ausschreibung_count_label.configure(text=f"{len(file_paths)} Datei(en) hochgeladen")
@@ -385,18 +381,20 @@ class SteelFoxApp:
             self.check_all_files_uploaded()
 
     def check_all_files_uploaded(self):
-        """Aktiviert den Analyse-Button, wenn alle Dateien hochgeladen wurden."""
-        if self.ifc_ausfuehrung_paths:
+        """Aktiviert den Analyse-Button, wenn alle Dateien (Excel und IFC) hochgeladen wurden."""
+        if hasattr(self, 'ifc_ausfuehrung_paths') and self.ifc_ausfuehrung_paths and \
+        hasattr(self, 'xlsx_ausschreibung_paths') and self.xlsx_ausschreibung_paths:
             self.analyze_button.configure(state='normal')
-    
-    def upload_excel_to_supabase(self, excel_file: str, sheet_name: str, table_name: str):
+
+    def upload_excel_to_supabase(self, excel_file: str):
         """
         Liest eine Excel-Tabelle aus und lädt die Daten in eine Supabase-Tabelle hoch.
         
         :param excel_file: Pfad zur Excel-Datei
-        :param sheet_name: Name des Tabellenblatts
-        :param table_name: Name der Supabase-Tabelle
         """
+        sheet_name = "Ausführung"  # Fester Tabellenblattname
+        table_name = "tender_data_reinforcement"  # Fester Tabellenname für Supabase
+
         try:
             # Excel-Tabelle auslesen
             print(f"Lese Excel-Datei: {excel_file}, Blatt: {sheet_name}")
@@ -411,8 +409,15 @@ class SteelFoxApp:
             df = df[['NPK', 'Menge', 'Preis']].dropna()
             print(f"Verarbeite {len(df)} Datensätze.")
 
-            # Daten in ein Liste von Dictionaries umwandeln (Batch-Upload)
+            # Datum der Unterzeichnung aus dem Eingabefeld lesen
+            contract_date = self.date_entry.get().strip()
+            if not contract_date:
+                raise ValueError("Das Datum der Unterzeichnung des Werkvertrags muss angegeben werden.")
+
+            # Daten in ein Liste von Dictionaries umwandeln (Batch-Upload) und das Datum hinzufügen
             data = df.to_dict(orient='records')
+            for record in data:
+                record['Datum'] = contract_date
 
             # Daten auf Supabase hochladen
             print(f"Lade Daten in die Supabase-Tabelle '{table_name}' hoch...")
@@ -436,20 +441,25 @@ class SteelFoxApp:
         """
         try:
             # Prüfe, ob die Projektinformationen vorhanden sind
-            if hasattr(self, 'project_number') and hasattr(self, 'project_short'):
-                # Übergabe des result_frame für die Ergebnisanzeige und der Projektinformationen
-                analyze_reinforcement_data(self.ifc_ausfuehrung_paths, self.project_number, self.project_short)
-
-                # Starte den Upload der Excel-Daten zu Supabase
-                if hasattr(self, "xlsx_ausschreibung_paths") and self.xlsx_ausschreibung_paths:
-                    sheet_name = "Sheet1"  # Passe dies an dein Tabellenblatt an
-                    table_name = "your_supabase_table"  # Name der Supabase-Tabelle
-                    for excel_file in self.xlsx_ausschreibung_paths:
-                        print(f"Starte Upload für Datei: {excel_file}")
-                        self.upload_excel_to_supabase(excel_file, sheet_name, table_name)
-                else:
-                    print("Keine Excel-Dateien zum Hochladen gefunden.")
-            else:
+            if not hasattr(self, 'project_number') or not hasattr(self, 'project_short'):
                 messagebox.showerror("Fehler", "Projektinformationen fehlen. Bitte erst ein Projekt erstellen.")
+                return
+
+            # Überprüfe, ob IFC-Dateien vorhanden sind
+            if not hasattr(self, 'ifc_ausfuehrung_paths') or not self.ifc_ausfuehrung_paths:
+                messagebox.showerror("Fehler", "IFC-Dateien fehlen. Bitte erst die Ausführungsdateien hochladen.")
+                return
+
+            # Übergabe des result_frame für die Ergebnisanzeige und der Projektinformationen
+            analyze_reinforcement_data(self.ifc_ausfuehrung_paths, self.project_number, self.project_short)
+
+            # Starte den Upload der Excel-Daten zu Supabase
+            if hasattr(self, "xlsx_ausschreibung_paths") and self.xlsx_ausschreibung_paths:
+                for excel_file in self.xlsx_ausschreibung_paths:
+                    print(f"Starte Upload für Datei: {excel_file}")
+                    self.upload_excel_to_supabase(excel_file)
+            else:
+                print("Keine Excel-Dateien zum Hochladen gefunden.")
+
         except Exception as e:
             messagebox.showerror("Fehler", f"Fehler bei der Analyse oder beim Upload: {str(e)}")
