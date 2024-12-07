@@ -1,6 +1,4 @@
-import customtkinter as ctk
-from tkinter import filedialog, messagebox
-from PIL import Image, ImageTk
+from datas.reinforcement_extractor import extract_file_info
 
 from datas.ifc_reader import load_ifc_data
 from datas.reinforcement_extractor import extract_all_reinforcement_properties
@@ -22,15 +20,15 @@ else:
     raise Exception("SUPABASE_URL und SUPABASE_API_KEY sind erforderlich.")
 
 # Daten aus reinforcement_data in Supabase-Datenbank einfügen
-def insert_reinforcement_data(reinforcement_data, project_number, project_short):
+def insert_reinforcement_data(reinforcement_data, project_number, project_short, creation_date):
     """Fügt Armierungsdaten in die Datenbank ein, mit einem Projektcode basierend auf Projektnummer und Kürzel."""
     # Projektcode erstellen
-    project_code = f"{project_number}_{project_short}"
+    project_code = f"{project_number}{project_short}"
 
     # Durch die Armierungsdaten iterieren und sie in die Datenbank einfügen
     for data in reinforcement_data:
         try:
-            # Füge den Projektcode zum Datensatz hinzu
+            # Füge den Projektcode und das Erstellungsdatum zum Datensatz hinzu
             response = supabase.table("reinforcement_data").insert({
                 "listennummer": data.get("Listennummer", "Unbekannt"),
                 "material": data.get("Material", "Unbekannt"),
@@ -38,7 +36,8 @@ def insert_reinforcement_data(reinforcement_data, project_number, project_short)
                 "gesamtgewicht": data.get("Gesamtgewicht", 0.0),
                 "etappe": data.get("Etappenbezeichnung", "Unbekannt"),
                 "bearbeitungsgrad": data.get("Bearbeitungsgrad", "Unbekannt"),
-                "projektcode": project_code  # Projektcode hinzufügen
+                "projektcode": project_code,  # Projektcode hinzufügen
+                "datum": creation_date  # Erstellungsdatum hinzufügen
             }).execute()
             
             if response.data:
@@ -49,6 +48,12 @@ def insert_reinforcement_data(reinforcement_data, project_number, project_short)
             print(f"Ein Fehler ist aufgetreten: {e}")
 
 def analyze_reinforcement_data(ifc_file_paths, project_number, project_short):
+    """
+    Analysiert Armierungsdaten aus den IFC-Dateien und lädt sie in die Datenbank.
+    :param ifc_file_paths: Liste der Pfade zu den IFC-Dateien
+    :param project_number: Projektnummer
+    :param project_short: Projektkürzel
+    """
     reinforcement_data = []
 
     # Iteriere über alle ausgewählten IFC-Dateien
@@ -60,10 +65,15 @@ def analyze_reinforcement_data(ifc_file_paths, project_number, project_short):
                 print(f"Fehler beim Laden der Datei: {file_path}")
                 continue
 
+            # Extrahiere das Erstellungsdatum und andere Informationen aus der Datei
+            file_info = extract_file_info(model)
+            creation_date = file_info.get("CreationTime", "Unbekannt")
+
+            # Extrahiere die Armierungseigenschaften
             data = extract_all_reinforcement_properties(model)
 
             if data:
-                # Filtere die relevanten Daten aus dem PropertySet "HGL_B2F" und "Allplan_ReinforcingBar"
+                # Filtere die relevanten Daten aus den PropertySets
                 filtered_data = []
                 for element in data:
                     psets = element.get("PropertySets", {})
@@ -90,12 +100,10 @@ def analyze_reinforcement_data(ifc_file_paths, project_number, project_short):
 
                 reinforcement_data.extend(filtered_data)
                 print(f"Extrahierte Daten aus Datei '{file_path}': {len(filtered_data)} Elemente")
+
+            # Daten in die Datenbank hochladen für die aktuelle Datei
+            if filtered_data:
+                insert_reinforcement_data(filtered_data, project_number, project_short, creation_date)
+
         except Exception as e:
             print(f"Fehler beim Verarbeiten der Datei '{file_path}': {str(e)}")
-
-    # Daten in die Datenbank hochladen
-    if reinforcement_data:
-        # Hier werden nun auch die Projektnummer und das Kürzel übergeben
-        insert_reinforcement_data(reinforcement_data, project_number, project_short)
-    else:
-        print("Keine Armierungseigenschaften in den ausgewählten Dateien gefunden.")

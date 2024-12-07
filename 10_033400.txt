@@ -1,0 +1,4 @@
+Projektname: 20§
+Projektnummer: 10
+Projektkürzel: 033400
+Projektphasen: 03

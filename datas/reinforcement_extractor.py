@@ -1,14 +1,40 @@
-import ifcopenshell
+def extract_file_info(model):
+    """
+    Extrahiert allgemeine Metainformationen aus dem IFC-Modell.
+    :param model: IFC Modell
+    :return: Dictionary mit allgemeinen Metainformationen
+    """
+    try:
+        header = model.header
+        file_info = {
+            "CreationTime": header.file_creation_date if hasattr(header, 'file_creation_date') else "Unbekannt",
+            "Author": header.file_author if hasattr(header, 'file_author') else "Unbekannt",
+            "Organization": header.file_organization if hasattr(header, 'file_organization') else "Unbekannt",
+            "Filename": header.file_name if hasattr(header, 'file_name') else "Unbekannt"
+        }
+        return file_info
+    except Exception as e:
+        print(f"Fehler beim Extrahieren der Datei-Informationen: {str(e)}")
+        return {
+            "CreationTime": "Unbekannt",
+            "Author": "Unbekannt",
+            "Organization": "Unbekannt",
+            "Filename": "Unbekannt"
+        }
 
 def extract_all_reinforcement_properties(model):
     """
     Extrahiert alle Eigenschaften, PropertySets und Materialinformationen aus einem IFC-Modell.
-    Die Funktion gibt eine umfassende Liste von Eigenschaften jeder IfcReinforcingBar zurück.
+    Die Funktion gibt eine umfassende Liste von Eigenschaften jeder IfcReinforcingBar zurück,
+    einschließlich der allgemeinen Metainformationen des Modells.
     
     :param model: IFC Modell
     :return: Liste von Dictionaries, die alle relevanten Eigenschaften enthalten
     """
     try:
+        # Headerinformationen extrahieren
+        file_info = extract_file_info(model)
+
         # Extrahiert alle IfcReinforcingBar-Elemente
         reinforcement_elements = model.by_type("IfcReinforcingBar")
 
@@ -25,6 +51,7 @@ def extract_all_reinforcement_properties(model):
                 "PropertySets": {},
                 "Quantities": {},
                 "Material": None,
+                "FileInfo": file_info  # Füge die Meta-Informationen hinzu
             }
 
             # PropertySets des Elements durchsuchen
@@ -71,4 +98,3 @@ def extract_all_reinforcement_properties(model):
     except Exception as e:
         print(f"Fehler beim Extrahieren der Armierungseigenschaften: {str(e)}")
         return []
-

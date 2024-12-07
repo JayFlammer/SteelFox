@@ -1,0 +1,4 @@
+Projektname: egsrg
+Projektnummer: 2233
+Projektkürzel: rft
+Projektphasen: 12

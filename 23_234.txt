@@ -1,4 +1,0 @@
-Projektname: wr
-Projektnummer: 23
-Projektkürzel: 234
-Projektphasen: 23

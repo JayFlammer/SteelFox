@@ -386,13 +386,13 @@ class SteelFoxApp:
         hasattr(self, 'xlsx_ausschreibung_paths') and self.xlsx_ausschreibung_paths:
             self.analyze_button.configure(state='normal')
 
-    def upload_excel_to_supabase(self, excel_file: str):
+    def upload_excel_to_supabase(self, excel_file):
         """
         Liest eine Excel-Tabelle aus und lädt die Daten in eine Supabase-Tabelle hoch.
         
         :param excel_file: Pfad zur Excel-Datei
         """
-        sheet_name = "Ausführung"  # Fester Tabellenblattname
+        sheet_name = "Ausschreibung"  # Fester Tabellenblattname
         table_name = "tender_data_reinforcement"  # Fester Tabellenname für Supabase
 
         try:
@@ -413,11 +413,21 @@ class SteelFoxApp:
             contract_date = self.date_entry.get().strip()
             if not contract_date:
                 raise ValueError("Das Datum der Unterzeichnung des Werkvertrags muss angegeben werden.")
+            
+            # Projektcode erstellen
+            project_code = f"{self.project_number}_{self.project_short}"
 
-            # Daten in ein Liste von Dictionaries umwandeln (Batch-Upload) und das Datum hinzufügen
+            # Spaltennamen in DataFrame anpassen
+            df.rename(columns={
+                'Menge': 'menge',
+                'Preis': 'preis'
+            }, inplace=True)
+
+            # Daten in ein Liste von Dictionaries umwandeln (Batch-Upload) und das Datum sowie Projektcode hinzufügen
             data = df.to_dict(orient='records')
             for record in data:
-                record['Datum'] = contract_date
+                record['datum'] = contract_date
+                record['projekt_code'] = project_code
 
             # Daten auf Supabase hochladen
             print(f"Lade Daten in die Supabase-Tabelle '{table_name}' hoch...")
