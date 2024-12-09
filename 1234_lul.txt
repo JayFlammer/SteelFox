@@ -1,0 +1,4 @@
+Projektname: HELLO
+Projektnummer: 1234
+Projektkürzel: lul
+Projektphasen: 12
