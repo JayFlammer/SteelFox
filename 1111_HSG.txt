@@ -1,4 +1,0 @@
-Projektname: Haus zum Glück
-Projektnummer: 1111
-Projektkürzel: HSG
-Projektphasen: 10

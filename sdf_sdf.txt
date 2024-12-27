@@ -1,4 +1,0 @@
-Projektname: dsf
-Projektnummer: sdf
-Projektkürzel: sdf
-Projektphasen: sf

@@ -1,4 +1,0 @@
-Projektname: Haus des Quadrats
-Projektnummer: 3232
-Projektkürzel: HDQ
-Projektphasen: 13

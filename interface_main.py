@@ -30,8 +30,8 @@ class SteelFoxApp:
         load_dotenv()
 
         # Supabase-Zugangsdaten abrufen
-        supabase_url = os.getenv("SUPABASE_URL")
-        supabase_key = os.getenv("SUPABASE_API_KEY")
+        supabase_url = os.getenv("https://gcsuexfqfdagerlwgixc.supabase.co")
+        supabase_key = os.getenv("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdjc3VleGZxZmRhZ2VybHdnaXhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA1NzE3NjgsImV4cCI6MjA0NjE0Nzc2OH0.ft526leek7EY1-GmhmkMPp6a2OZuVOCI9Ugde_0_qCc")
 
         # Supabase-Client erstellen
         if supabase_url and supabase_key:
@@ -73,6 +73,17 @@ class SteelFoxApp:
         """Aktualisiert den Titeltext und das zugehörige Label."""
         self.title_text = new_text
         self.welcome_label.configure(text=self.title_text)
+    
+    def add_logout_button(self, parent_frame):
+        """Fügt einen Logout-Button zu einem Frame hinzu."""
+        logout_button = ctk.CTkButton(parent_frame, text="Logout", command=self.show_login_frame, fg_color="red", text_color="black")
+        logout_button.pack(side="bottom", pady=20)
+
+    def add_leave_project_button(self, parent_frame):
+        """Fügt einen 'Projekt verlassen'-Button zu einem Frame hinzu."""
+        leave_project_button = ctk.CTkButton(parent_frame, text="Projekt verlassen", command=self.show_selection_screen, fg_color="#ffa500", text_color="black")
+        leave_project_button.pack(side="bottom", pady=20)
+
 
     def load_login_data(self):
         """Lädt die Login-Daten aus einer JSON-Datei."""
@@ -89,12 +100,16 @@ class SteelFoxApp:
 
     def show_login_frame(self):
         """Zeigt das Anmeldeframe an"""
+        # Entferne das aktuelle Frame, falls vorhanden
+        self.clear_frames()
+
+        # Neues Login-Frame erstellen
         self.login_frame = ctk.CTkFrame(self.root, corner_radius=0)
         self.login_frame.pack(fill="both", expand=True)
 
         # Label und Eingabefelder
         ctk.CTkLabel(self.login_frame, text="Login", font=("Helvetica", 20, "bold")).pack(pady=20)
-        
+
         ctk.CTkLabel(self.login_frame, text="ID:", font=("Helvetica", 14)).pack(pady=5)
         self.id_entry = ctk.CTkEntry(self.login_frame)
         self.id_entry.pack(pady=5)
@@ -126,9 +141,7 @@ class SteelFoxApp:
     def show_selection_screen(self):
         """Zeigt einen schwarzen Screen mit Auswahlmöglichkeiten an"""
         # Altes Login-Frame entfernen
-        if hasattr(self, "login_frame"):
-            self.login_frame.pack_forget()
-            self.login_frame.destroy()
+        self.clear_frames()
 
         # Neues Frame für die Auswahl erstellen
         self.selection_frame = ctk.CTkFrame(self.root, fg_color="black")  # Schwarzer Hintergrund
@@ -158,6 +171,68 @@ class SteelFoxApp:
 
         compare_projects_button = ctk.CTkButton(options_frame, text="Mehrere Projekte vergleichen", width=button_width, height=button_height, command=self.compare_projects, fg_color="#D2691E")
         compare_projects_button.grid(row=0, column=2, padx=20, pady=20)
+        
+        self.add_logout_button(self.selection_frame)
+    
+    def show_project_search_frame(self):
+        """Zeigt ein Frame, in dem nach einem Projekt gesucht werden kann."""
+        # Altes Auswahlframe entfernen
+        if hasattr(self, "selection_frame"):
+            self.selection_frame.pack_forget()
+            self.selection_frame.destroy()
+        
+
+        # Neues Frame für Projektsuche erstellen
+        self.project_search_frame = ctk.CTkFrame(self.root, fg_color="black")
+        self.project_search_frame.pack(fill="both", expand=True)
+
+        ctk.CTkLabel(self.project_search_frame, text="Projektsuche", font=("Helvetica", 20, "bold"), text_color="white").pack(pady=20)
+
+        ctk.CTkLabel(self.project_search_frame, text="Projektnummer:", font=("Helvetica", 14), text_color="white").pack(pady=5)
+        self.project_number_entry = ctk.CTkEntry(self.project_search_frame)
+        self.project_number_entry.pack(pady=5)
+
+        ctk.CTkLabel(self.project_search_frame, text="Projekt Kürzel:", font=("Helvetica", 14), text_color="white").pack(pady=5)
+        self.project_short_entry = ctk.CTkEntry(self.project_search_frame)
+        self.project_short_entry.pack(pady=5)
+
+        search_button = ctk.CTkButton(self.project_search_frame, text="Projekt suchen", command=self.search_project, fg_color="#ffa500")
+        search_button.pack(pady=20)
+
+        self.add_logout_button(self.project_search_frame)
+        self.add_leave_project_button(self.project_search_frame)
+
+    def search_project(self):
+        """Sucht ein Projekt anhand der Projektnummer und des Kürzels in der Datenbank."""
+        project_number = self.project_number_entry.get().strip()
+        project_short = self.project_short_entry.get().strip()
+
+        if not project_number or not project_short:
+            messagebox.showerror("Fehler", "Bitte sowohl Projektnummer als auch Projekt Kürzel angeben.")
+            return
+
+        # Generiere den Projektcode
+        project_code = f"{project_number}{project_short}"
+        print(f"Generated Project Code: {project_code}{type(project_code)}")  # Debugging
+
+        try:
+            # Suche in der Datenbank nach `projektcode`
+            response = self.supabase.table("projekte").select("*").eq("projekt_code", project_code).execute()
+            
+            if response and response.data:  # Prüfen, ob Daten zurückgegeben wurden
+                print(f"Projekt gefunden: {response.data}")
+                messagebox.showinfo("Erfolg", f"Projekt gefunden: {response.data}")
+
+                # Speichere den Projektcode für spätere Datenübergaben
+                self.current_project_code = project_code  # Speichern für andere Frames
+                self.show_main_frame()  # Wechsel zum Input-Frame
+            else:
+                print("Projekt nicht gefunden.")
+                messagebox.showerror("Fehler", "Projekt nicht gefunden.")
+        except Exception as e:
+            print(f"Fehler bei der Projektsuche: {e}")
+            messagebox.showerror("Fehler", f"Fehler bei der Projektsuche: {e}")
+
 
     def show_new_project_input(self):
         """Zeigt die Eingabefelder für ein neues Projekt innerhalb des aktuellen Frames an"""
@@ -190,6 +265,11 @@ class SteelFoxApp:
         # Button zum Erstellen des Projekts
         create_button = ctk.CTkButton(self.project_input_frame, text="Projekt erstellen", command=self.create_project)
         create_button.pack(pady=20)
+        
+        self.add_logout_button(self.project_input_frame)
+        self.add_leave_project_button(self.project_input_frame)
+
+
 
     def create_project(self):
         """Erstellt ein neues Projekt nach Validierung der Eingaben"""
@@ -218,7 +298,7 @@ class SteelFoxApp:
             return
         else:
             # Erstelle eine Datei mit project_number und project_short als Dateinamen
-            project_filename = f"{self.project_number}_{self.project_short}.txt"
+            project_filename = f"{self.project_number}{self.project_short}.txt"
             
             try:
                 # Erstelle die Datei im Projektordner
@@ -264,7 +344,8 @@ class SteelFoxApp:
                 "projektnummer": project_number,
                 "projekt_name": project_name,
                 "projekt_kuerzel": project_short,
-                "anzahl_etappen": project_stages
+                "anzahl_etappen": project_stages,
+                "projekt_code" : f"{project_number}{project_short}".strip()
             }).execute()
 
             # Überprüfe den Status der Antwort
@@ -293,12 +374,7 @@ class SteelFoxApp:
 
     def open_existing_project(self):
         """Logik zum Öffnen eines bestehenden Projekts"""
-        # Hier könnte man einen Dateiauswahldialog hinzufügen
-        file_paths = filedialog.askopenfilenames(filetypes=[("Projektdateien", "*.proj")])
-        if file_paths:
-            self.selection_frame.pack_forget()
-            self.selection_frame.destroy()
-            self.show_main_frame()  # Beispiel: Wechselt direkt zum Hauptframe
+        self.show_project_search_frame()
 
     def compare_projects(self):
         """Logik zum Vergleichen mehrerer Projekte"""
@@ -353,6 +429,32 @@ class SteelFoxApp:
         # Variablen zur Speicherung der Dateipfade
         self.ifc_old_paths = []
         self.ifc_new_paths = []
+        self.add_logout_button(self.main_frame)
+        self.add_leave_project_button(self.main_frame)
+
+    def clear_frames(self):
+        """Entfernt alle aktiven Frames"""
+        if hasattr(self, "login_frame") and self.login_frame:
+            self.login_frame.pack_forget()
+            self.login_frame.destroy()
+
+        if hasattr(self, "selection_frame") and self.selection_frame:
+            self.selection_frame.pack_forget()
+            self.selection_frame.destroy()
+
+        if hasattr(self, "main_frame") and self.main_frame:
+            self.main_frame.pack_forget()
+            self.main_frame.destroy()
+
+        if hasattr(self, "project_input_frame") and self.project_input_frame:
+            self.project_input_frame.pack_forget()
+            self.project_input_frame.destroy()
+        
+        if hasattr(self, "project_search_frame") and self.project_search_frame:
+            self.project_search_frame.pack_forget()
+            self.project_search_frame.destroy()
+
+
 
     def toggle_fullscreen(self, event=None):
         """Aktiviert/Deaktiviert den Vollbildmodus"""
@@ -415,7 +517,7 @@ class SteelFoxApp:
                 raise ValueError("Das Datum der Unterzeichnung des Werkvertrags muss angegeben werden.")
             
             # Projektcode erstellen
-            project_code = f"{self.project_number}_{self.project_short}"
+            project_code = f"{self.project_number}{self.project_short}"
 
             # Spaltennamen in DataFrame anpassen
             df.rename(columns={
