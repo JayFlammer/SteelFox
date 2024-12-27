@@ -30,8 +30,8 @@ class SteelFoxApp:
         load_dotenv()
 
         # Supabase-Zugangsdaten abrufen
-        supabase_url = os.getenv("https://gcsuexfqfdagerlwgixc.supabase.co")
-        supabase_key = os.getenv("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdjc3VleGZxZmRhZ2VybHdnaXhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA1NzE3NjgsImV4cCI6MjA0NjE0Nzc2OH0.ft526leek7EY1-GmhmkMPp6a2OZuVOCI9Ugde_0_qCc")
+        supabase_url = os.getenv("SUPABASE_URL")
+        supabase_key = os.getenv("SUPABASE_API_KEY")
 
         # Supabase-Client erstellen
         if supabase_url and supabase_key:
@@ -211,26 +211,28 @@ class SteelFoxApp:
             messagebox.showerror("Fehler", "Bitte sowohl Projektnummer als auch Projekt Kürzel angeben.")
             return
 
-        # Generiere den Projektcode
         project_code = f"{project_number}{project_short}"
-        print(f"Generated Project Code: {project_code}{type(project_code)}")  # Debugging
 
         try:
-            # Suche in der Datenbank nach `projektcode`
-            response = self.supabase.table("projekte").select("*").eq("projekt_code", project_code).execute()
-            
-            if response and response.data:  # Prüfen, ob Daten zurückgegeben wurden
-                print(f"Projekt gefunden: {response.data}")
-                messagebox.showinfo("Erfolg", f"Projekt gefunden: {response.data}")
+            # Suche in der Datenbank nach dem Projektcode
+            response = self.supabase.table("projekte").select("*").filter("projekt_code", "eq", project_code).execute()
 
-                # Speichere den Projektcode für spätere Datenübergaben
-                self.current_project_code = project_code  # Speichern für andere Frames
-                self.show_main_frame()  # Wechsel zum Input-Frame
+            if response.data:  # Wenn das Projekt existiert
+                messagebox.showinfo("Erfolg", f"Projekt gefunden: {response.data}")
+                
+                # Projektcode speichern
+                self.current_project = {
+                    "number": project_number,
+                    "short": project_short,
+                    "code": project_code
+                }
+
+                # Wechsel zum Input-Frame
+                self.clear_frames()
+                self.show_main_frame()
             else:
-                print("Projekt nicht gefunden.")
                 messagebox.showerror("Fehler", "Projekt nicht gefunden.")
         except Exception as e:
-            print(f"Fehler bei der Projektsuche: {e}")
             messagebox.showerror("Fehler", f"Fehler bei der Projektsuche: {e}")
 
 
