@@ -1,4 +1,0 @@
-Projektname: Haus
-Projektnummer: 3131
-Projektkürzel: HAU
-Projektphasen: 12

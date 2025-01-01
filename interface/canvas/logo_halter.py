@@ -3,7 +3,7 @@ from PIL import Image
 
 def add_halter_logo(title_canvas):
     try:
-        halter_logo_path = "interface/ui_main/logo-hier-stehen.png"
+        halter_logo_path = "interface/canvas/logo-hier-stehen.png"
 
         # Bild mit PIL laden
         halter_logo_image = Image.open(halter_logo_path)

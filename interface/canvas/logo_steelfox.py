@@ -3,7 +3,7 @@ from PIL import Image
 
 def add_steelfox_logo(title_canvas):
     try:
-        image_path = "interface/ui_main/Logo.png"
+        image_path = "interface/canvas/Logo.png"
         
         # Bild mit PIL laden
         logo_image = Image.open(image_path)

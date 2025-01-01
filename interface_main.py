@@ -3,16 +3,16 @@ from tkinter import filedialog, messagebox
 
 import json
 
-from reinforcement_calculations import analyze_reinforcement_data
+from datas.reinforcement_calculations import analyze_reinforcement_data
 
 from interface.ui_main.frame_main import create_main_frame
-from interface.ui_main.title_canvas import create_title_canvas
-from interface.ui_main.logo_steelfox import add_steelfox_logo
-from interface.ui_main.logo_halter import add_halter_logo
-from interface.ui_main.title_steelfox import add_steelfox_text
+from interface.canvas.title_canvas import create_title_canvas
+from interface.canvas.logo_steelfox import add_steelfox_logo
+from interface.canvas.logo_halter import add_halter_logo
+from interface.canvas.title_steelfox import add_steelfox_text
 from interface.ui_main.frame_input import create_input_frame
 from interface.ui_main.frame_result import create_result_frame
-from interface.ui_main.version_label import create_version_label
+from interface.canvas.version_label import create_version_label
 
 import os
 from supabase import create_client, Client
@@ -83,6 +83,20 @@ class SteelFoxApp:
         """Fügt einen 'Projekt verlassen'-Button zu einem Frame hinzu."""
         leave_project_button = ctk.CTkButton(parent_frame, text="Projekt verlassen", command=self.show_selection_screen, fg_color="#ffa500", text_color="black")
         leave_project_button.pack(side="bottom", pady=20)
+
+    def add_logout_button_and_leave_project_button(self, parent_frame):
+        """Fügt die Buttons 'Logout' und 'Projekt verlassen' nebeneinander zu einem Frame hinzu."""
+        # Erstelle einen Container-Frame für die Buttons
+        button_frame = ctk.CTkFrame(parent_frame, fg_color="transparent")
+        button_frame.pack(side="bottom", pady=20)
+
+        # 'Projekt verlassen'-Button hinzufügen
+        leave_project_button = ctk.CTkButton(button_frame, text="Projekt verlassen", command=self.show_selection_screen, fg_color="#ffa500", text_color="black")
+        leave_project_button.pack(side="left", padx=10)  # 'left' sorgt dafür, dass die Buttons nebeneinander erscheinen
+
+        # Logout-Button hinzufügen
+        logout_button = ctk.CTkButton(button_frame, text="Logout", command=self.show_login_frame, fg_color="red", text_color="black")
+        logout_button.pack(side="left", padx=10)
 
 
     def load_login_data(self):
@@ -199,8 +213,7 @@ class SteelFoxApp:
         search_button = ctk.CTkButton(self.project_search_frame, text="Projekt suchen", command=self.search_project, fg_color="#ffa500")
         search_button.pack(pady=20)
 
-        self.add_logout_button(self.project_search_frame)
-        self.add_leave_project_button(self.project_search_frame)
+        self.add_logout_button_and_leave_project_button(self.project_search_frame)
 
     def search_project(self):
         """Sucht ein Projekt anhand der Projektnummer und des Kürzels in der Datenbank."""
@@ -268,8 +281,7 @@ class SteelFoxApp:
         create_button = ctk.CTkButton(self.project_input_frame, text="Projekt erstellen", command=self.create_project)
         create_button.pack(pady=20)
         
-        self.add_logout_button(self.project_input_frame)
-        self.add_leave_project_button(self.project_input_frame)
+        self.add_logout_button_and_leave_project_button(self.project_input_frame)
 
 
 
@@ -303,14 +315,6 @@ class SteelFoxApp:
             project_filename = f"{self.project_number}{self.project_short}.txt"
             
             try:
-                # Erstelle die Datei im Projektordner
-                with open(project_filename, 'w') as file:
-                    file.write(f"Projektname: {self.project_name}\n")
-                    file.write(f"Projektnummer: {self.project_number}\n")
-                    file.write(f"Projektkürzel: {self.project_short}\n")
-                    if self.project_stages:
-                        file.write(f"Projektphasen: {self.project_stages}\n")
-
                 # Merke dir das aktuell geöffnete Projekt als Dictionary
                 self.current_project = {
                     "number": self.project_number,
@@ -431,8 +435,8 @@ class SteelFoxApp:
         # Variablen zur Speicherung der Dateipfade
         self.ifc_old_paths = []
         self.ifc_new_paths = []
-        self.add_logout_button(self.main_frame)
-        self.add_leave_project_button(self.main_frame)
+
+        self.add_logout_button_and_leave_project_button(self.main_frame)
 
     def clear_frames(self):
         """Entfernt alle aktiven Frames"""
