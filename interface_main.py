@@ -68,11 +68,6 @@ class SteelFoxApp:
 
         # Start mit dem Anmeldeframe
         self.show_login_frame()
-
-    def update_title_text(self, new_text):
-        """Aktualisiert den Titeltext und das zugehörige Label."""
-        self.title_text = new_text
-        self.welcome_label.configure(text=self.title_text)
     
     def add_logout_button(self, parent_frame):
         """Fügt einen Logout-Button zu einem Frame hinzu."""
@@ -152,6 +147,11 @@ class SteelFoxApp:
                 return
         ctk.CTkLabel(self.login_frame, text="Ungültige Anmeldedaten", text_color="red").pack(pady=10)
 
+    def update_title_text(self, new_text):
+        """Aktualisiert den Titeltext und das zugehörige Label."""
+        self.title_text = new_text
+        self.welcome_label.configure(text=self.title_text)
+
     def show_selection_screen(self):
         """Zeigt einen schwarzen Screen mit Auswahlmöglichkeiten an"""
         # Altes Login-Frame entfernen
@@ -217,14 +217,14 @@ class SteelFoxApp:
 
     def search_project(self):
         """Sucht ein Projekt anhand der Projektnummer und des Kürzels in der Datenbank."""
-        project_number = self.project_number_entry.get().strip()
-        project_short = self.project_short_entry.get().strip()
+        self.project_number = self.project_number_entry.get().strip()
+        self.project_short = self.project_short_entry.get().strip()
 
-        if not project_number or not project_short:
+        if not self.project_number or not self.project_short:
             messagebox.showerror("Fehler", "Bitte sowohl Projektnummer als auch Projekt Kürzel angeben.")
             return
 
-        project_code = f"{project_number}{project_short}"
+        project_code = f"{self.project_number}{self.project_short}"
 
         try:
             # Suche in der Datenbank nach dem Projektcode
@@ -232,21 +232,20 @@ class SteelFoxApp:
 
             if response.data:  # Wenn das Projekt existiert
                 messagebox.showinfo("Erfolg", f"Projekt gefunden: {response.data}")
-                
-                # Projektcode speichern
-                self.current_project = {
-                    "number": project_number,
-                    "short": project_short,
-                    "code": project_code
-                }
 
-                # Wechsel zum Input-Frame
+                # Wechsle zum Input-Frame
                 self.clear_frames()
                 self.show_main_frame()
+                
+                # Rückgabe der Projektinformationen (optional, falls später benötigt)
+                return self.project_number, self.project_short
+
             else:
                 messagebox.showerror("Fehler", "Projekt nicht gefunden.")
+                return None
         except Exception as e:
             messagebox.showerror("Fehler", f"Fehler bei der Projektsuche: {e}")
+            return None
 
 
     def show_new_project_input(self):
@@ -311,17 +310,9 @@ class SteelFoxApp:
             messagebox.showwarning("Warnung", "Das Projektkürzel ist bereits vergeben. Bitte ein anderes Kürzel wählen.")
             return
         else:
-            # Erstelle eine Datei mit project_number und project_short als Dateinamen
-            project_filename = f"{self.project_number}{self.project_short}.txt"
-            
+                       
             try:
-                # Merke dir das aktuell geöffnete Projekt als Dictionary
-                self.current_project = {
-                    "number": self.project_number,
-                    "short": self.project_short,
-                    "filename": project_filename
-                }
-
+                
                 # Projektdaten in die Datenbank einfügen
                 self.insert_project_data(self.project_number, self.project_name, self.project_short, self.project_stages)
 
@@ -383,13 +374,8 @@ class SteelFoxApp:
         self.show_project_search_frame()
 
     def compare_projects(self):
-        """Logik zum Vergleichen mehrerer Projekte"""
-        # Hier könnte man mehrere Dateien zum Vergleich auswählen lassen
-        file_paths = filedialog.askopenfilenames(filetypes=[("Projektdateien", "*.proj")])
-        if file_paths:
-            self.selection_frame.pack_forget()
-            self.selection_frame.destroy()
-            self.show_main_frame()  # Beispiel: Wechselt direkt zum Hauptframe
+        messagebox.showinfo(title="Hinweis", message="Coming Soon :)")
+
 
     def show_main_frame(self):
         """Zeigt das Hauptframe an"""
@@ -402,41 +388,117 @@ class SteelFoxApp:
 
         # Dateien Auswahl
         # Excel Armierung Alt
-        self.xlsx_ausschreibung_label = ctk.CTkLabel(self.input_frame, text="Armierung Ausschreibung", font=("Helvetica", 14, "bold"), fg_color="#787575", text_color="#ffffff")
+        self.xlsx_ausschreibung_label = ctk.CTkLabel(
+        self.input_frame, 
+        text="Armierung Ausschreibung", 
+        font=("Helvetica", 14, "bold"), 
+        fg_color="#787575", 
+        text_color="#ffffff"
+        )
         self.xlsx_ausschreibung_label.pack(pady=5, padx=10, fill="x")
 
-        self.xlsx_ausschreibung_button = ctk.CTkButton(self.input_frame, text="Excel Upload", command=self.upload_reinforcement_auschreibung, fg_color="#ffa8a8", text_color="white", width=200)
-        self.xlsx_ausschreibung_button.pack(padx=10)
+        self.xlsx_ausschreibung_button = ctk.CTkButton(
+            self.input_frame, 
+            text="Excel Upload", 
+            command=self.upload_reinforcement_auschreibung, 
+            fg_color="#ffa8a8", 
+            text_color="white", 
+            width=200
+        )
+        self.xlsx_ausschreibung_button.pack(pady=(5, 5), padx=10)
 
-        self.xlsx_ausschreibung_count_label = ctk.CTkLabel(self.input_frame, text="Noch keine Datei hochgeladen", font=("Helvetica", 12), text_color="#ffffff")
-        self.xlsx_ausschreibung_count_label.pack(padx=10, fill="x")
+        self.xlsx_ausschreibung_count_label = ctk.CTkLabel(
+            self.input_frame, 
+            text="Noch keine Datei hochgeladen", 
+            font=("Helvetica", 12), 
+            text_color="#ffffff"
+        )
+        self.xlsx_ausschreibung_count_label.pack(pady=(5, 10), padx=10, fill="x")
 
-        # Eingabefeld für Datum der Unterzeichnung des Werkvertrags
-        self.date_label = ctk.CTkLabel(self.input_frame, text="Datum der Unterzeichnung des Werkvertrags (TT.MM.JJJJ):", font=("Helvetica", 12), text_color="#ffffff")
+        # Eingabefeld für Datum der Unterzeichnung
+        self.date_label = ctk.CTkLabel(
+            self.input_frame, 
+            text="Werkvertragsdatum", 
+            font=("Helvetica", 14, "bold"), 
+            fg_color="#787575", 
+            text_color="#ffffff"
+            )
+        
         self.date_label.pack(pady=(10, 5), padx=10, fill="x")
 
-        self.date_entry = ctk.CTkEntry(self.input_frame, placeholder_text="TT.MM.JJJJ", font=("Helvetica", 12), width=200)
+        self.date_entry = ctk.CTkEntry(
+            self.input_frame, 
+            placeholder_text="TT.MM.JJJJ", 
+            font=("Helvetica", 12), 
+            width=200
+        )
         self.date_entry.pack(pady=5, padx=10)
 
         # IFC Armierung Ausführung
-        self.ifc_ausfuehrung_label = ctk.CTkLabel(self.input_frame, text="Armierung Ausführung", font=("Helvetica", 14, "bold"), fg_color="#787575", text_color="#ffffff")
-        self.ifc_ausfuehrung_label.pack(pady=10, padx=10, fill="x")
+        self.ifc_ausfuehrung_label = ctk.CTkLabel(
+            self.input_frame, 
+            text="Armierung Ausführung", 
+            font=("Helvetica", 14, "bold"), 
+            fg_color="#787575", 
+            text_color="#ffffff"
+        )
+        self.ifc_ausfuehrung_label.pack(pady=(20, 5), padx=10, fill="x")
 
-        self.ifc_ausfuehrung_button = ctk.CTkButton(self.input_frame, text="IFC Upload", command=self.upload_reinforcement_ausfuehrung, fg_color="#ffa8a8", text_color="white", width=200)
-        self.ifc_ausfuehrung_button.pack(padx=10)
+        self.ifc_ausfuehrung_button = ctk.CTkButton(
+            self.input_frame, 
+            text="IFC Upload", 
+            command=self.upload_reinforcement_ausfuehrung, 
+            fg_color="#ffa8a8", 
+            text_color="white", 
+            width=200
+        )
+        self.ifc_ausfuehrung_button.pack(pady=(5, 5), padx=10)
 
-        self.ifc_ausfuehrung_count_label = ctk.CTkLabel(self.input_frame, text="Noch keine Datei hochgeladen", font=("Helvetica", 12), text_color="#ffffff")
-        self.ifc_ausfuehrung_count_label.pack(padx=10, fill="x")
+        self.ifc_ausfuehrung_count_label = ctk.CTkLabel(
+            self.input_frame, 
+            text="Noch keine Datei hochgeladen", 
+            font=("Helvetica", 12), 
+            text_color="#ffffff"
+        )
+        self.ifc_ausfuehrung_count_label.pack(pady=(5, 10), padx=10, fill="x")
 
-        # Button zur Analyse hinzufügen
-        self.analyze_button = ctk.CTkButton(self.input_frame, text="Analyse starten", font=("Helvetica", 14), command=self.start_analysis, state='disabled', fg_color="#000000", text_color="white", width=200)
-        self.analyze_button.pack(pady=20, padx=10)
+        # Button zum Hochladen
+        self.upload_button = ctk.CTkButton(
+            self.input_frame, 
+            text="Daten Uploaden", 
+            font=("Helvetica", 14), 
+            command=self.start_upload, 
+            fg_color="#000000", 
+            text_color="white", 
+            width=200
+        )
+        self.upload_button.pack(pady=(20, 5), padx=10)
 
+        # Status Label
+        self.ausführungs_status_label = ctk.CTkLabel(
+            self.input_frame, 
+            text="Deine Daten wurden noch nicht \nauf die Datenbank hochgeladen", 
+            font=("Helvetica", 12), 
+            text_color="red"
+        )
+        self.ausführungs_status_label.pack(pady=(5, 10), padx=10, fill="x")
+
+        # Button zum Analyse starten
+        self.analyze_button = ctk.CTkButton(
+            self.input_frame, 
+            text="Analyze starten", 
+            font=("Helvetica", 14), 
+            command=self.start_analyze, 
+            fg_color="#000000", 
+            text_color="white", 
+            width=200
+        )
+        self.analyze_button.pack(pady=(10, 20), padx=10)
         # Variablen zur Speicherung der Dateipfade
         self.ifc_old_paths = []
         self.ifc_new_paths = []
 
-        self.add_logout_button_and_leave_project_button(self.main_frame)
+        self.add_logout_button_and_leave_project_button(self.input_frame)
 
     def clear_frames(self):
         """Entfernt alle aktiven Frames"""
@@ -477,7 +539,6 @@ class SteelFoxApp:
             # Button grün markieren und den Status aktualisieren
             self.xlsx_ausschreibung_button.configure(fg_color="#83fc83", text_color="white")
             self.xlsx_ausschreibung_count_label.configure(text=f"{len(file_paths)} Datei(en) hochgeladen")
-            self.check_all_files_uploaded()
 
     def upload_reinforcement_ausfuehrung(self):
         file_paths = filedialog.askopenfilenames(filetypes=[("IFC files", "*.ifc")])
@@ -486,13 +547,6 @@ class SteelFoxApp:
             # Button grün markieren und den Status aktualisieren
             self.ifc_ausfuehrung_button.configure(fg_color="#83fc83", text_color="white")
             self.ifc_ausfuehrung_count_label.configure(text=f"{len(file_paths)} Datei(en) hochgeladen")
-            self.check_all_files_uploaded()
-
-    def check_all_files_uploaded(self):
-        """Aktiviert den Analyse-Button, wenn alle Dateien (Excel und IFC) hochgeladen wurden."""
-        if hasattr(self, 'ifc_ausfuehrung_paths') and self.ifc_ausfuehrung_paths and \
-        hasattr(self, 'xlsx_ausschreibung_paths') and self.xlsx_ausschreibung_paths:
-            self.analyze_button.configure(state='normal')
 
     def upload_excel_to_supabase(self, excel_file):
         """
@@ -553,7 +607,7 @@ class SteelFoxApp:
         except Exception as e:
             print(f"Ein unerwarteter Fehler ist aufgetreten: {e}")
 
-    def start_analysis(self):
+    def start_upload(self):
         """
         Startet die Analyse und lädt relevante Daten in Supabase hoch.
         """
@@ -563,21 +617,49 @@ class SteelFoxApp:
                 messagebox.showerror("Fehler", "Projektinformationen fehlen. Bitte erst ein Projekt erstellen.")
                 return
 
-            # Überprüfe, ob IFC-Dateien vorhanden sind
-            if not hasattr(self, 'ifc_ausfuehrung_paths') or not self.ifc_ausfuehrung_paths:
-                messagebox.showerror("Fehler", "IFC-Dateien fehlen. Bitte erst die Ausführungsdateien hochladen.")
-                return
+            # IFC-Dateien analysieren, wenn vorhanden
+            if hasattr(self, 'ifc_ausfuehrung_paths') and self.ifc_ausfuehrung_paths:
+                analyze_reinforcement_data(self.ifc_ausfuehrung_paths, self.project_number, self.project_short)
+                print("IFC-Dateien wurden erfolgreich analysiert.")
+            else:
+                print("Keine IFC-Dateien gefunden. Überspringe die Analyse.")
 
-            # Übergabe des result_frame für die Ergebnisanzeige und der Projektinformationen
-            analyze_reinforcement_data(self.ifc_ausfuehrung_paths, self.project_number, self.project_short)
-
-            # Starte den Upload der Excel-Daten zu Supabase
+            # Excel-Dateien hochladen, wenn vorhanden
             if hasattr(self, "xlsx_ausschreibung_paths") and self.xlsx_ausschreibung_paths:
+                # Prüfe, ob ein Datum eingegeben wurde
+                creation_date = self.date_entry.get().strip()
+                if not creation_date:
+                    messagebox.showerror("Fehler", "Bitte geben Sie ein Datum an, bevor Sie Excel-Dateien hochladen.")
+                    return
+
+                # Schleife durch die Excel-Dateien
                 for excel_file in self.xlsx_ausschreibung_paths:
                     print(f"Starte Upload für Datei: {excel_file}")
                     self.upload_excel_to_supabase(excel_file)
-            else:
-                print("Keine Excel-Dateien zum Hochladen gefunden.")
 
+                    # Status aktualisieren
+                    
+                print("Excel-Dateien wurden erfolgreich hochgeladen.")
+            else:
+                print("Keine Excel-Dateien gefunden. Überspringe den Upload.")
+            
+            self.ausführungs_status_label.configure(text_color="green")
+            self.ausführungs_status_label.configure(text=f"Deine Daten wurden erfolgreich \nauf die Datenbank hochgeladen")
+            
+            self.ifc_ausfuehrung_paths = []  # IFC-Dateien löschen
+            self.xlsx_ausschreibung_paths = []  # Excel-Dateien löschen
+            self.date_entry.delete(0, 'end')  # Datum löschen
+            self.date_entry.configure(placeholder_text="TT.MM.JJJJ")
+            self.ifc_ausfuehrung_count_label.configure(text="Noch keine Datei hochgeladen")  # IFC-Status zurücksetzen
+            self.xlsx_ausschreibung_count_label.configure(text="Noch keine Datei hochgeladen")  # Excel-Status zurücksetzen
+            self.ifc_ausfuehrung_button.configure(fg_color="#ffa8a8", text_color="white")  # IFC-Upload-Button zurücksetzen
+            self.xlsx_ausschreibung_button.configure(fg_color="#ffa8a8", text_color="white")  # Excel-Upload-Button zurücksetzen
+
+            messagebox.showinfo("Erfolg", "Analyse und Upload abgeschlossen.")
         except Exception as e:
             messagebox.showerror("Fehler", f"Fehler bei der Analyse oder beim Upload: {str(e)}")
+
+
+    def start_analyze(self):
+
+        print("Analyse starten")

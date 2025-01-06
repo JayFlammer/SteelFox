@@ -26,9 +26,14 @@ def insert_reinforcement_data(reinforcement_data, project_number, project_short,
     project_code = f"{project_number}{project_short}"
 
     # Durch die Armierungsdaten iterieren und sie in die Datenbank einfügen
+    # Daten iterieren und sicherstellen, dass NPK ignoriert wird
     for data in reinforcement_data:
+        # Entferne 'NPK', falls es vorhanden ist
+        if "NPK" in data:
+            del data["NPK"]
+        
         try:
-            # Füge den Projektcode und das Erstellungsdatum zum Datensatz hinzu
+            # Daten in die Supabase-Datenbank einfügen
             response = supabase.table("reinforcement_data").insert({
                 "listennummer": data.get("Listennummer", "Unbekannt"),
                 "material": data.get("Material", "Unbekannt"),
@@ -45,7 +50,8 @@ def insert_reinforcement_data(reinforcement_data, project_number, project_short,
             else:
                 print("Fehler beim Einfügen der Daten.")
         except Exception as e:
-            print(f"Ein Fehler ist aufgetreten: {e}")
+            print(f"Ein Fehler beim IFC ist aufgetreten: {e}")
+
 
 def analyze_reinforcement_data(ifc_file_paths, project_number, project_short):
     """
