@@ -1,26 +1,26 @@
-def extract_file_info(model):
+import re
+
+def extract_creation_date(filepath):
     """
-    Extrahiert allgemeine Metainformationen aus dem IFC-Modell.
-    :param model: IFC Modell
-    :return: Dictionary mit allgemeinen Metainformationen
+    Extrahiert das Erstellungsdatum aus einer IFC-Datei.
+    :param filepath: Pfad zur IFC-Datei
+    :return: Erstellungsdatum als String oder 'Unbekannt'
     """
     try:
-        header = model.header
-        file_info = {
-            "CreationTime": header.file_creation_date if hasattr(header, 'file_creation_date') else "Unbekannt",
-            "Author": header.file_author if hasattr(header, 'file_author') else "Unbekannt",
-            "Organization": header.file_organization if hasattr(header, 'file_organization') else "Unbekannt",
-            "Filename": header.file_name if hasattr(header, 'file_name') else "Unbekannt"
-        }
-        return file_info
+        # Öffnet die Datei und liest sie Zeile für Zeile
+        with open(filepath, 'r', encoding='utf-8') as file:
+            for line in file:
+                # Sucht nach der Zeile, die mit FILE_NAME beginnt
+                if "FILE_NAME" in line:
+                    # Regex, um das Datum im Format 'YYYY-MM-DDTHH:MM:SS' zu finden
+                    match = re.search(r"\d{4}-\d{2}-\d{2}", line)
+                    if match:
+                        return match.group()  # Gibt das gefundene Datum zurück
+        # Falls kein Datum gefunden wird
+        return "Unbekannt"
     except Exception as e:
-        print(f"Fehler beim Extrahieren der Datei-Informationen: {str(e)}")
-        return {
-            "CreationTime": "Unbekannt",
-            "Author": "Unbekannt",
-            "Organization": "Unbekannt",
-            "Filename": "Unbekannt"
-        }
+        print(f"Fehler beim Lesen der Datei: {str(e)}")
+        return "Unbekannt"
 
 def extract_all_reinforcement_properties(model):
     """
@@ -33,7 +33,7 @@ def extract_all_reinforcement_properties(model):
     """
     try:
         # Headerinformationen extrahieren
-        file_info = extract_file_info(model)
+        file_info = extract_creation_date(model)
 
         # Extrahiert alle IfcReinforcingBar-Elemente
         reinforcement_elements = model.by_type("IfcReinforcingBar")

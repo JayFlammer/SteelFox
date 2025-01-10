@@ -1,4 +1,4 @@
-from datas.reinforcement_extractor import extract_file_info
+from datas.reinforcement_extractor import extract_creation_date
 
 from datas.ifc_reader import load_ifc_data
 from datas.reinforcement_extractor import extract_all_reinforcement_properties
@@ -72,8 +72,10 @@ def analyze_reinforcement_data(ifc_file_paths, project_number, project_short):
                 continue
 
             # Extrahiere das Erstellungsdatum und andere Informationen aus der Datei
-            file_info = extract_file_info(model)
-            creation_date = file_info.get("CreationTime", "Unbekannt")
+            file_info = extract_creation_date(file_path)
+            creation_date = file_info
+
+            print(creation_date)
 
             # Extrahiere die Armierungseigenschaften
             data = extract_all_reinforcement_properties(model)

@@ -2,6 +2,7 @@ import customtkinter as ctk
 from tkinter import filedialog, messagebox
 
 import json
+import datetime
 
 from datas.reinforcement_calculations import analyze_reinforcement_data
 
@@ -126,9 +127,6 @@ class SteelFoxApp:
         ctk.CTkLabel(self.login_frame, text="Passwort:", font=("Helvetica", 14)).pack(pady=5)
         self.password_entry = ctk.CTkEntry(self.login_frame, show="*")
         self.password_entry.pack(pady=5)
-
-        # Enter-Taste für Login binden
-        self.root.bind('<Return>', lambda event: self.check_login())
 
         # Login Button
         self.login_button = ctk.CTkButton(self.login_frame, text="Anmelden", command=self.check_login)
@@ -428,7 +426,7 @@ class SteelFoxApp:
 
         self.date_entry = ctk.CTkEntry(
             self.input_frame, 
-            placeholder_text="TT.MM.JJJJ", 
+            placeholder_text="YYYY-MM-TT", 
             font=("Helvetica", 12), 
             width=200
         )
@@ -499,7 +497,7 @@ class SteelFoxApp:
         self.ifc_new_paths = []
 
         self.add_logout_button_and_leave_project_button(self.input_frame)
-
+    
     def clear_frames(self):
         """Entfernt alle aktiven Frames"""
         if hasattr(self, "login_frame") and self.login_frame:
@@ -649,7 +647,7 @@ class SteelFoxApp:
             self.ifc_ausfuehrung_paths = []  # IFC-Dateien löschen
             self.xlsx_ausschreibung_paths = []  # Excel-Dateien löschen
             self.date_entry.delete(0, 'end')  # Datum löschen
-            self.date_entry.configure(placeholder_text="TT.MM.JJJJ")
+            self.date_entry.configure(placeholder_text="YYYY-MM-DD")  # Platzhalter zurücksetzen
             self.ifc_ausfuehrung_count_label.configure(text="Noch keine Datei hochgeladen")  # IFC-Status zurücksetzen
             self.xlsx_ausschreibung_count_label.configure(text="Noch keine Datei hochgeladen")  # Excel-Status zurücksetzen
             self.ifc_ausfuehrung_button.configure(fg_color="#ffa8a8", text_color="white")  # IFC-Upload-Button zurücksetzen
