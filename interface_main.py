@@ -635,15 +635,15 @@ class SteelFoxApp:
                     print(f"Starte Upload für Datei: {excel_file}")
                     self.upload_excel_to_supabase(excel_file)
 
-                    # Status aktualisieren
-                    
                 print("Excel-Dateien wurden erfolgreich hochgeladen.")
             else:
                 print("Keine Excel-Dateien gefunden. Überspringe den Upload.")
-            
+
+            # Status aktualisieren
             self.ausführungs_status_label.configure(text_color="green")
             self.ausführungs_status_label.configure(text=f"Deine Daten wurden erfolgreich \nauf die Datenbank hochgeladen")
-            
+
+            # Pfade und Eingaben zurücksetzen
             self.ifc_ausfuehrung_paths = []  # IFC-Dateien löschen
             self.xlsx_ausschreibung_paths = []  # Excel-Dateien löschen
             self.date_entry.delete(0, 'end')  # Datum löschen
@@ -659,5 +659,7 @@ class SteelFoxApp:
 
 
     def start_analyze(self):
-
+        """
+        Startet die Analyse.
+        """
         print("Analyse starten")
