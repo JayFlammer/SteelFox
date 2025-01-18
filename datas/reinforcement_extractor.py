@@ -3,8 +3,12 @@ import re
 def extract_creation_date(filepath):
     """
     Extrahiert das Erstellungsdatum aus einer IFC-Datei.
-    :param filepath: Pfad zur IFC-Datei
-    :return: Erstellungsdatum als String oder 'Unbekannt'
+
+    Parameter:
+        filepath (str): Pfad zur IFC-Datei.
+
+    Rückgabe:
+        str: Erstellungsdatum im Format 'YYYY-MM-DD' oder 'Unbekannt'.
     """
     try:
         # Öffnet die Datei und liest sie Zeile für Zeile
@@ -19,17 +23,18 @@ def extract_creation_date(filepath):
         # Falls kein Datum gefunden wird
         return "Unbekannt"
     except Exception as e:
-        print(f"Fehler beim Lesen der Datei: {str(e)}")
+        print(f"Fehler beim Lesen der Datei für das Datum: {str(e)}")
         return "Unbekannt"
 
 def extract_all_reinforcement_properties(model):
     """
-    Extrahiert alle Eigenschaften, PropertySets und Materialinformationen aus einem IFC-Modell.
-    Die Funktion gibt eine umfassende Liste von Eigenschaften jeder IfcReinforcingBar zurück,
-    einschließlich der allgemeinen Metainformationen des Modells.
-    
-    :param model: IFC Modell
-    :return: Liste von Dictionaries, die alle relevanten Eigenschaften enthalten
+    Extrahiert relevante Eigenschaften von IfcReinforcingBar-Elementen aus einem IFC-Modell.
+
+    Parameter:
+        model (ifcopenshell.file): Das IFC-Modell.
+
+    Rückgabe:
+        list: Eine Liste mit den extrahierten Eigenschaften.
     """
     try:
         # Headerinformationen extrahieren
