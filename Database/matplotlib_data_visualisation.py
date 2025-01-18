@@ -21,7 +21,9 @@ else:
 def fetch_data_for_project_code(project_code):
     try:
         # Abruf der Daten mit Filterung nach project_code_aggregated
-        response = supabase.table("aggregated_reinforcement_data").select("*").eq("project_code_aggregated", project_code).execute()
+        response = supabase.table("aggregated_reinforcement_data").select("*").limit(5).execute()
+        print(f"DEBUG: {response.data}")
+
         if response.data:
             print(f"Daten erfolgreich abgerufen für Projektcode {project_code}.")
             return response.data

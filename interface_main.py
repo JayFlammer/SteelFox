@@ -1,6 +1,6 @@
 import customtkinter as ctk
 from tkinter import filedialog, messagebox
-
+from tkinter import ttk
 import json
 import datetime
 
@@ -18,6 +18,9 @@ from interface.canvas.version_label import create_version_label
 import os
 from supabase import create_client, Client
 from dotenv import load_dotenv
+
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pandas as pd
 
 
@@ -71,17 +74,32 @@ class SteelFoxApp:
         self.show_login_frame()
     
     def add_logout_button(self, parent_frame):
-        """Fügt einen Logout-Button zu einem Frame hinzu."""
+        """
+        Fügt einen Logout-Button zu einem bestimmten Frame hinzu.
+
+        Parameter:
+            parent_frame (ctk.CTkFrame): Das Frame, in dem der Button platziert wird.
+        """
         logout_button = ctk.CTkButton(parent_frame, text="Logout", command=self.show_login_frame, fg_color="red", text_color="black")
         logout_button.pack(side="bottom", pady=20)
 
     def add_leave_project_button(self, parent_frame):
-        """Fügt einen 'Projekt verlassen'-Button zu einem Frame hinzu."""
+        """
+        Fügt einen 'Projekt verlassen'-Button zu einem bestimmten Frame hinzu.
+
+        Parameter:
+            parent_frame (ctk.CTkFrame): Das Frame, in dem der Button platziert wird.
+        """
         leave_project_button = ctk.CTkButton(parent_frame, text="Projekt verlassen", command=self.show_selection_screen, fg_color="#ffa500", text_color="black")
         leave_project_button.pack(side="bottom", pady=20)
 
     def add_logout_button_and_leave_project_button(self, parent_frame):
-        """Fügt die Buttons 'Logout' und 'Projekt verlassen' nebeneinander zu einem Frame hinzu."""
+        """
+        Fügt die Buttons 'Logout' und 'Projekt verlassen' nebeneinander zu einem Frame hinzu.
+
+        Parameter:
+            parent_frame (ctk.CTkFrame): Das Frame, in dem die Buttons platziert werden.
+        """
         # Erstelle einen Container-Frame für die Buttons
         button_frame = ctk.CTkFrame(parent_frame, fg_color="transparent")
         button_frame.pack(side="bottom", pady=20)
@@ -96,7 +114,12 @@ class SteelFoxApp:
 
 
     def load_login_data(self):
-        """Lädt die Login-Daten aus einer JSON-Datei."""
+        """
+        Lädt die Login-Daten aus einer JSON-Datei.
+
+        Rückgabe:
+            list: Eine Liste mit Benutzerinformationen aus der Datei.
+        """
         try:
             with open("login_daten.json", "r") as file:
                 data = json.load(file)
@@ -109,7 +132,9 @@ class SteelFoxApp:
             return []
 
     def show_login_frame(self):
-        """Zeigt das Anmeldeframe an"""
+        """
+        Zeigt das Anmeldefenster an.
+        """
         # Entferne das aktuelle Frame, falls vorhanden
         self.clear_frames()
 
@@ -133,7 +158,9 @@ class SteelFoxApp:
         self.login_button.pack(pady=20)
 
     def check_login(self):
-        """Überprüft die Anmeldedaten"""
+        """
+        Überprüft die eingegebenen Login-Daten und meldet den Benutzer an, falls diese korrekt sind.
+        """
         user_id = self.id_entry.get()
         password = self.password_entry.get()
 
@@ -146,12 +173,19 @@ class SteelFoxApp:
         ctk.CTkLabel(self.login_frame, text="Ungültige Anmeldedaten", text_color="red").pack(pady=10)
 
     def update_title_text(self, new_text):
-        """Aktualisiert den Titeltext und das zugehörige Label."""
+        """
+        Aktualisiert den Titeltext in der Benutzeroberfläche.
+
+        Parameter:
+            new_text (str): Der neue Titeltext.
+        """
         self.title_text = new_text
         self.welcome_label.configure(text=self.title_text)
 
     def show_selection_screen(self):
-        """Zeigt einen schwarzen Screen mit Auswahlmöglichkeiten an"""
+        """
+        Zeigt das Auswahlmenü für den Benutzer nach erfolgreichem Login.
+        """
         # Altes Login-Frame entfernen
         self.clear_frames()
 
@@ -187,7 +221,9 @@ class SteelFoxApp:
         self.add_logout_button(self.selection_frame)
     
     def show_project_search_frame(self):
-        """Zeigt ein Frame, in dem nach einem Projekt gesucht werden kann."""
+        """
+        Zeigt das UI-Frame für die Projektsuche an.
+        """
         # Altes Auswahlframe entfernen
         if hasattr(self, "selection_frame"):
             self.selection_frame.pack_forget()
@@ -214,7 +250,12 @@ class SteelFoxApp:
         self.add_logout_button_and_leave_project_button(self.project_search_frame)
 
     def search_project(self):
-        """Sucht ein Projekt anhand der Projektnummer und des Kürzels in der Datenbank."""
+        """
+        Sucht in der Datenbank nach einem Projekt mit der eingegebenen Projektnummer und dem Kürzel.
+
+        Rückgabe:
+            tuple: (Projektnummer, Projektkürzel) falls gefunden, sonst None.
+        """
         self.project_number = self.project_number_entry.get().strip()
         self.project_short = self.project_short_entry.get().strip()
 
@@ -247,7 +288,9 @@ class SteelFoxApp:
 
 
     def show_new_project_input(self):
-        """Zeigt die Eingabefelder für ein neues Projekt innerhalb des aktuellen Frames an"""
+        """
+        Zeigt die Eingabemaske für ein neues Projekt.
+        """
         # Altes Auswahlframe entfernen
         if hasattr(self, "selection_frame"):
             self.selection_frame.pack_forget()
@@ -283,7 +326,12 @@ class SteelFoxApp:
 
 
     def create_project(self):
-        """Erstellt ein neues Projekt nach Validierung der Eingaben"""
+        """
+        Erstellt ein neues Projekt und speichert es in der Datenbank.
+
+        Rückgabe:
+            tuple: (Projektnummer, Projektname, Projektkürzel, Anzahl Etappen), falls erfolgreich.
+        """
         # Eingabewerte abrufen und als Instanzvariablen speichern
         self.project_number = self.project_number_entry.get()
         self.project_name = self.project_name_entry.get()
@@ -298,7 +346,6 @@ class SteelFoxApp:
         if self.project_number == "0000":
             messagebox.showwarning("Eingabefehler", "Projektnummer '0000' ist ungültig.")
             return
-
         # Überprüfung, ob das Projekt bereits existiert (hier muss die Datenbankabfrage integriert werden)
         project_exists = self.check_project_exists(self.project_number, self.project_short)
         if project_exists == "both":
@@ -307,11 +354,9 @@ class SteelFoxApp:
         elif project_exists == "short":
             messagebox.showwarning("Warnung", "Das Projektkürzel ist bereits vergeben. Bitte ein anderes Kürzel wählen.")
             return
-        else:
-                       
+        else:     
             try:
-                
-                # Projektdaten in die Datenbank einfügen
+                 # Projektdaten in die Datenbank einfügen
                 self.insert_project_data(self.project_number, self.project_name, self.project_short, self.project_stages)
 
                 # Erfolgsmeldung
@@ -332,7 +377,15 @@ class SteelFoxApp:
 
     
     def insert_project_data(self, project_number, project_name, project_short, project_stages):
-        """Fügt ein neues Projekt in die Supabase-Datenbank ein"""
+        """
+        Speichert ein neues Projekt in der Datenbank.
+
+        Parameter:
+            project_number (str): Projektnummer.
+            project_name (str): Name des Projekts.
+            project_short (str): Projektkürzel.
+            project_stages (int): Anzahl der Etappen.
+        """
         try:
             # Die Anfrage an die Supabase-Datenbank senden
             response = self.supabase.table("projekte").insert({
@@ -358,25 +411,57 @@ class SteelFoxApp:
 
 
     def check_project_exists(self, project_number, project_short):
-        """Überprüft, ob ein Projekt mit der angegebenen Nummer und/oder Kürzel bereits existiert."""
-        # Dieser Teil muss noch mit der Datenbanklogik ergänzt werden
-        # Für das Beispiel: Angenommen, Projektnummer '1234' und Kürzel 'XYZ' sind bereits vorhanden
-        if project_number == "1234" and project_short == "XYZ":
-            return "both"
-        elif project_short == "XYZ":
-            return "short"
-        return "none"
+        """
+        Überprüft, ob ein Projekt mit der angegebenen Nummer oder dem Kürzel bereits in der Datenbank existiert.
+
+        Parameter:
+            project_number (str): Projektnummer.
+            project_short (str): Projektkürzel.
+
+        Rückgabe:
+            str: "both", wenn sowohl Nummer als auch Kürzel existieren,
+                "short", wenn nur das Kürzel existiert,
+                "none", wenn das Projekt nicht existiert.
+        """
+        try:
+            # Erstelle den Projektcode aus Nummer und Kürzel
+            project_code = f"{project_number}{project_short}"
+
+            # Datenbankabfrage nach dem Projektcode
+            response = self.supabase.table("projekte").select("projekt_code").filter("projekt_code", "eq", project_code).execute()
+
+            if response.data:
+                return "both"  # Der Projektcode existiert bereits
+
+            # Falls nur das Kürzel existiert (andere Kombination)
+            response_short = self.supabase.table("projekte").select("projekt_kuerzel").filter("projekt_kuerzel", "eq", project_short).execute()
+
+            if response_short.data:
+                return "short"  # Das Kürzel ist bereits vergeben, aber mit einer anderen Nummer
+
+            return "none"  # Kein passendes Projekt gefunden
+
+        except Exception as e:
+            print(f"Fehler bei der Projektsuche: {e}")
+            return "none"
 
     def open_existing_project(self):
-        """Logik zum Öffnen eines bestehenden Projekts"""
+        """
+        Öffnet das Fenster zur Eingabe der Projektnummer, um ein bestehendes Projekt zu laden.
+        """
         self.show_project_search_frame()
 
     def compare_projects(self):
+        """
+        Zeigt eine Benachrichtigung, dass die Vergleichsfunktion noch nicht verfügbar ist.
+        """
         messagebox.showinfo(title="Hinweis", message="Coming Soon :)")
 
 
     def show_main_frame(self):
-        """Zeigt das Hauptframe an"""
+        """
+        Zeigt das Hauptfenster nach erfolgreichem Login oder Projektauswahl.
+        """
         # Neues Main Frame laden
         self.main_frame = create_main_frame(self.root)
 
@@ -484,7 +569,7 @@ class SteelFoxApp:
         # Button zum Analyse starten
         self.analyze_button = ctk.CTkButton(
             self.input_frame, 
-            text="Analyze starten", 
+            text="Analyse starten", 
             font=("Helvetica", 14), 
             command=self.start_analyze, 
             fg_color="#000000", 
@@ -499,7 +584,9 @@ class SteelFoxApp:
         self.add_logout_button_and_leave_project_button(self.input_frame)
     
     def clear_frames(self):
-        """Entfernt alle aktiven Frames"""
+        """
+        Entfernt alle aktiven Fenster, um Platz für neue Inhalte zu schaffen.
+        """
         if hasattr(self, "login_frame") and self.login_frame:
             self.login_frame.pack_forget()
             self.login_frame.destroy()
@@ -523,14 +610,27 @@ class SteelFoxApp:
 
 
     def toggle_fullscreen(self, event=None):
-        """Aktiviert/Deaktiviert den Vollbildmodus"""
+        """
+        Aktiviert oder deaktiviert den Vollbildmodus.
+
+        Parameter:
+            event (tk.Event, optional): Tasteneingabe-Event.
+        """
         self.root.attributes("-fullscreen", not self.root.attributes("-fullscreen"))
 
     def exit_fullscreen(self, event=None):
-        """Beendet den Vollbildmodus"""
+        """
+        Beendet den Vollbildmodus.
+
+        Parameter:
+            event (tk.Event, optional): Tasteneingabe-Event.
+        """
         self.root.attributes("-fullscreen", False)
 
     def upload_reinforcement_auschreibung(self):
+        """
+        Öffnet einen Dialog zum Hochladen von Excel-Dateien für die Armierungsausschreibung.
+        """
         file_paths = filedialog.askopenfilenames(filetypes=[("Excel file", "*.xlsx")])
         if file_paths:
             self.xlsx_ausschreibung_paths = list(file_paths)
@@ -539,6 +639,9 @@ class SteelFoxApp:
             self.xlsx_ausschreibung_count_label.configure(text=f"{len(file_paths)} Datei(en) hochgeladen")
 
     def upload_reinforcement_ausfuehrung(self):
+        """
+        Öffnet einen Dialog zum Hochladen von IFC-Dateien für die Armierungsausführung.
+        """
         file_paths = filedialog.askopenfilenames(filetypes=[("IFC files", "*.ifc")])
         if file_paths:
             self.ifc_ausfuehrung_paths = list(file_paths)
@@ -548,9 +651,10 @@ class SteelFoxApp:
 
     def upload_excel_to_supabase(self, excel_file):
         """
-        Liest eine Excel-Tabelle aus und lädt die Daten in eine Supabase-Tabelle hoch.
-        
-        :param excel_file: Pfad zur Excel-Datei
+        Lädt eine Excel-Tabelle mit Ausschreibungsdaten in die Datenbank hoch.
+
+        Parameter:
+            excel_file (str): Pfad zur Excel-Datei.
         """
         sheet_name = "Ausschreibung"  # Fester Tabellenblattname
         table_name = "tender_data_reinforcement"  # Fester Tabellenname für Supabase
@@ -607,7 +711,7 @@ class SteelFoxApp:
 
     def start_upload(self):
         """
-        Startet die Analyse und lädt relevante Daten in Supabase hoch.
+        Startet den Upload-Prozess für Ausschreibungs- und Ausführungsdaten.
         """
         try:
             # Prüfe, ob die Projektinformationen vorhanden sind
@@ -657,9 +761,115 @@ class SteelFoxApp:
         except Exception as e:
             messagebox.showerror("Fehler", f"Fehler bei der Analyse oder beim Upload: {str(e)}")
 
+    def fetch_and_display_data(self):
+        """
+        Holt Projektdaten aus der Datenbank und zeigt sie als scrollbare Tabellen an.
+        """
+        
+        # Vorherige Inhalte des result_frame entfernen
+        for widget in self.result_frame.winfo_children():
+            widget.destroy()
+
+        if not hasattr(self, 'project_number') or not hasattr(self, 'project_short'):
+            messagebox.showerror("Fehler", "Kein Projektcode gefunden. Bitte wähle zuerst ein Projekt aus.")
+            return
+
+        project_code = f"{self.project_number}{self.project_short}"
+
+        # Daten aus der ersten Tabelle abrufen
+        data_aggregated = []
+        try:
+            response = self.supabase.table("aggregated_reinforcement_data").select("*").filter("project_code_aggregated", "eq", project_code).execute()
+            data_aggregated = response.data if response.data else []
+        except Exception as e:
+            messagebox.showerror("Fehler", f"Fehler beim Abrufen der aggregierten Daten: {e}")
+            return
+
+        # Daten aus der zweiten Tabelle abrufen
+        data_tender = []
+        try:
+            response = self.supabase.table("tender_data_reinforcement").select("*").filter("projekt_code", "eq", project_code).execute()
+            data_tender = response.data if response.data else []
+        except Exception as e:
+            messagebox.showerror("Fehler", f"Fehler beim Abrufen der Ausschreibungsdaten: {e}")
+            return
+
+        if not data_aggregated and not data_tender:
+            messagebox.showinfo("Hinweis", f"Keine Daten für Projekt {project_code} gefunden.")
+            return
+
+        # Haupt-Frame für beide Tabellen
+        table_frame = ctk.CTkFrame(self.result_frame, fg_color="transparent")
+        table_frame.pack(fill="both", expand=True)
+
+        # Obere Tabelle (Aggregated Reinforcement Data)
+        if data_aggregated:
+            self.create_scrollable_table(table_frame, data_aggregated, "Armierung Ausführung")
+
+        # Untere Tabelle (Tender Data Reinforcement)
+        if data_tender:
+            self.create_scrollable_table(table_frame, data_tender, "Armierung Ausschreibung")
+
+    def create_scrollable_table(self, parent, data, title):
+        """
+        Erstellt eine scrollbare Tabelle mit den angegebenen Daten.
+
+        Parameter:
+            parent (ctk.CTkFrame): Das übergeordnete UI-Element.
+            data (list): Die anzuzeigenden Daten.
+            title (str): Der Titel der Tabelle.
+        """
+        
+        # Daten als Pandas DataFrame formatieren
+        df = pd.DataFrame(data)
+
+        # Frame für die Tabelle
+        section_frame = ctk.CTkFrame(parent, fg_color="transparent")
+        section_frame.pack(fill="both", expand=True, pady=10)
+
+        # Titel über der Tabelle
+        title_label = ctk.CTkLabel(section_frame, text=title, font=("Helvetica", 16, "bold"))
+        title_label.pack(pady=5)
+
+        # Canvas für Scrollbarkeit
+        canvas = ctk.CTkCanvas(section_frame)
+        scrollbar_y = ctk.CTkScrollbar(section_frame, orientation="vertical", command=canvas.yview)
+        scrollable_frame = ctk.CTkFrame(canvas)
+
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(
+                scrollregion=canvas.bbox("all")
+            )
+        )
+
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar_y.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar_y.pack(side="right", fill="y")
+
+        # Tabelle mit CustomTkinter erstellen
+        tree = ttk.Treeview(scrollable_frame, columns=list(df.columns), show="headings", height=15)
+
+        # Spaltenüberschriften setzen
+        for col in df.columns:
+            tree.heading(col, text=col, anchor="center")
+            tree.column(col, width=200, anchor="center")  # Gleichmäßige Spaltenbreite
+
+        # Zeilen in die Tabelle einfügen
+        for row in df.itertuples(index=False):
+            tree.insert("", "end", values=row)
+
+        # Styling verbessern
+        style = ttk.Style()
+        style.configure("Treeview", font=("Helvetica", 14), rowheight=30)
+
+        tree.pack(fill="both", expand=True)
 
     def start_analyze(self):
         """
-        Startet die Analyse.
+        Startet die Analyse der Armierungsdaten.
         """
         print("Analyse starten")
+        self.fetch_and_display_data()

@@ -21,7 +21,15 @@ else:
 
 # Daten aus reinforcement_data in Supabase-Datenbank einfügen
 def insert_reinforcement_data(reinforcement_data, project_number, project_short, creation_date):
-    """Fügt Armierungsdaten in die Datenbank ein, mit einem Projektcode basierend auf Projektnummer und Kürzel."""
+    """
+    Fügt analysierte Armierungsdaten in die Datenbank ein.
+
+    Parameter:
+        reinforcement_data (list): Liste der Armierungsdaten.
+        project_number (str): Projektnummer.
+        project_short (str): Projektkürzel.
+        creation_date (str): Erstellungsdatum.
+    """
     # Projektcode erstellen
     project_code = f"{project_number}{project_short}"
 
@@ -55,10 +63,12 @@ def insert_reinforcement_data(reinforcement_data, project_number, project_short,
 
 def analyze_reinforcement_data(ifc_file_paths, project_number, project_short):
     """
-    Analysiert Armierungsdaten aus den IFC-Dateien und lädt sie in die Datenbank.
-    :param ifc_file_paths: Liste der Pfade zu den IFC-Dateien
-    :param project_number: Projektnummer
-    :param project_short: Projektkürzel
+    Analysiert IFC-Dateien und speichert die extrahierten Armierungsdaten in der Datenbank.
+
+    Parameter:
+        ifc_file_paths (list): Liste mit IFC-Dateipfaden.
+        project_number (str): Projektnummer.
+        project_short (str): Projektkürzel.
     """
     reinforcement_data = []
 
